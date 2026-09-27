@@ -77,3 +77,4 @@
 - 사용자 이메일에 해당하는 GitHub 계정을 확인했다. `obsi-onto` 공개 저장소와 `feat/initial-mvp` 브랜치의 PR을 준비한다.
 - 전체 53개 테스트, Ruff 검사·서식, JavaScript 3개 파일의 구문 검사를 통과했다. 공개할 Git 변경 목록에서 실제 인증 키·개인 API 주소·개인 볼트 경로가 없는지 확인했다.
 - 공개할 파일만 별도 임시 폴더로 내보내 `uv sync --locked --python 3.12`, `.env.example` 복사, `uv run main.py`를 검증했다. API 키 없이 가상 노트 5개 연결·기본 예상 질문·출처가 있는 검색·근거 그래프를 확인했다. 기존 사용자 서버·볼트에는 영향을 주지 않았다.
+- [공개 저장소](https://github.com/espseongsm/obsi-onto)를 생성하고 `main` 초기 기준과 `feat/initial-mvp` 구현 브랜치를 푸시했다. [1차 개발 PR #1](https://github.com/espseongsm/obsi-onto/pull/1)을 생성했으며 병합하지 않았다. 전체 사용법은 구현 브랜치의 README에 포함했다.
