@@ -1,0 +1,20 @@
+@prefix o: <https://obsi-onto.local/schema/> .
+@prefix sh: <http://www.w3.org/ns/shacl#> .
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+o:SectionShape a sh:NodeShape ; sh:targetClass o:Section ;
+ sh:property [ sh:path o:note ; sh:class o:Note ; sh:minCount 1 ; sh:maxCount 1 ] ;
+ sh:property [ sh:path o:sourceHash ; sh:minCount 1 ; sh:datatype xsd:string ] ;
+ sh:property [ sh:path o:startLine ; sh:minCount 1 ; sh:minInclusive 1 ] ;
+ sh:property [ sh:path o:endLine ; sh:minCount 1 ; sh:minInclusive 1 ] ;
+ sh:property [ sh:path o:revision ; sh:minCount 1 ; sh:minInclusive 1 ] .
+o:RelationShape a sh:NodeShape ; sh:targetClass o:Relation ;
+ sh:property [ sh:path o:source ; sh:class o:Section ; sh:minCount 1 ] ;
+ sh:property [ sh:path o:target ; sh:class o:Note ; sh:minCount 1 ] ;
+ sh:property [ sh:path o:origin ; sh:minCount 1 ] .
+o:ClaimShape a sh:NodeShape ; sh:targetClass o:Claim ; sh:targetClass o:Activity ;
+ sh:property [ sh:path o:source ; sh:class o:Section ; sh:minCount 1 ] ;
+ sh:property [ sh:path o:about ; sh:class o:Topic ; sh:minCount 1 ] .
+o:SourceShape a sh:NodeShape ; sh:targetClass o:Source ;
+ sh:property [ sh:path o:source ; sh:class o:Section ; sh:minCount 1 ] ;
+ sh:property [ sh:path o:url ; sh:datatype xsd:string ; sh:minCount 1 ] ;
+ sh:property [ sh:path o:verified ; sh:datatype xsd:boolean ; sh:minCount 1 ] .

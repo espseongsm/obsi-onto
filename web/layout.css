@@ -1,0 +1,50 @@
+[hidden]{display:none!important}
+@media(min-width:1550px){.page{padding-top:70px}
+.intro{margin-bottom:38px}
+}
+@media(max-width:1100px){:root{--sidebar:205px}
+.sidebar{padding:30px 12px}
+.page{padding:35px 28px}
+.topbar{padding:0 28px}
+.suggestion-grid{gap:10px}
+.suggestion-grid button{padding:17px}
+.result-layout{grid-template-columns:1fr}
+.vault-stat{min-width:55px}
+.sync-badge{display:none}
+}
+@media(max-width:760px){:root{--sidebar:0px}
+.sidebar{position:relative;width:100%;padding:17px;border-right:0;border-bottom:1px solid var(--line)}
+.brand{margin:0 8px 18px}
+.brand strong>span,.space-label,.history-header,.history,.sidebar-bottom{display:none}
+.sidebar nav{display:flex;overflow:auto;gap:3px}
+.nav{white-space:nowrap;width:auto;margin:0;font-size:11px;padding:9px}
+.nav>span:first-child{font-size:16px;width:auto}
+.nav-count{display:none}
+.topbar{height:58px;padding:0 20px}
+.local-pill{font-size:7px}
+.page{padding:29px 20px}
+h1{font-size:32px}
+.intro p{font-size:12px}
+.path-form{flex-direction:column}
+.connect-card{padding:18px}
+.step-badge{display:none}
+.question-card{padding:19px 17px}
+.question-card textarea{font-size:14px}
+.question-tools .primary{padding:11px}
+.filters{gap:3px}
+.suggestion-grid{grid-template-columns:1fr}
+.suggestion-grid button{min-height:115px;padding:18px 20px 18px 69px}
+.card-icon{position:absolute;left:20px;top:22px}
+.suggestion-grid strong br{display:none}
+.section-label>span{display:none}
+.vault-strip{padding:16px;gap:10px}
+.vault-caption{display:none}
+.vault-stat:last-of-type{display:none}
+.settings-grid{grid-template-columns:1fr}
+.page-heading{display:block}
+.actions{margin:16px 0}
+.result-layout{grid-template-columns:1fr}
+.toast{top:15px;left:15px;right:15px}
+.under-question{font-size:8px}
+.vault-label>span{display:none}
+}
