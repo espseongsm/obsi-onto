@@ -2,6 +2,7 @@ import json
 import os
 
 import httpx
+import pytest
 
 import main
 from app.config import Config
@@ -52,7 +53,8 @@ def test_main_loads_project_env_and_preserves_shell_values(tmp_path, monkeypatch
     assert started["host"] == "127.0.0.1" and started["port"] == 8877
 
 
-def test_luna_request_omits_unsupported_temperature_and_keeps_citations(monkeypatch):
+@pytest.mark.parametrize("question", ["시연일은?", "한국어로 답변해줘. 시연일은?"])
+def test_luna_request_uses_english_default_and_keeps_citations(monkeypatch, question):
     config = Config(
         generation_url="https://example.test/openai/v1/",
         generation_model="gpt-5.6-luna",
@@ -66,7 +68,12 @@ def test_luna_request_omits_unsupported_temperature_and_keeps_citations(monkeypa
         assert url == "https://example.test/openai/v1/chat/completions"
         assert payload["model"] == "gpt-5.6-luna" and "temperature" not in payload
         assert payload["response_format"] == {"type": "json_object"}
-        assert json.loads(payload["messages"][1]["content"])["evidence"] == evidence
+        instruction = payload["messages"][0]["content"]
+        assert "in English by default" in instruction
+        assert "only if the current question explicitly requests it" in instruction
+        assert "Preserve source quotes and extracted names exactly as written" in instruction
+        message = json.loads(payload["messages"][1]["content"])
+        assert message["question"] == question and message["evidence"] == evidence
         assert options["headers"]["Authorization"] == "Bearer dummy-test-key"
         assert not options["follow_redirects"]
         return httpx.Response(
@@ -79,7 +86,10 @@ def test_luna_request_omits_unsupported_temperature_and_keeps_citations(monkeypa
                             "content": json.dumps(
                                 {
                                     "sentences": [
-                                        {"text": "시연일은 2026-10-01입니다.", "citations": ["S1"]}
+                                        {
+                                            "text": "The demo date is 2026-10-01.",
+                                            "citations": ["S1"],
+                                        }
                                     ]
                                 }
                             )
@@ -90,7 +100,7 @@ def test_luna_request_omits_unsupported_temperature_and_keeps_citations(monkeypa
         )
 
     monkeypatch.setattr("app.models.httpx.post", post)
-    answer = Generator(config).request("시연일은?", evidence)
+    answer = Generator(config).request(question, evidence)
     assert Search.validate_sentences(answer, evidence)[0]["citations"] == ["S1"]
 
 
@@ -109,7 +119,9 @@ def test_follow_up_context_is_separate_from_current_evidence(monkeypatch):
         assert message["evidence"] == evidence
         assert message["previous_conversation"] == previous
         assert "user_clarification" not in message
-        assert "이전 답변은 사실 근거가 아니다" in options["json"]["messages"][0]["content"]
+        instruction = options["json"]["messages"][0]["content"]
+        assert "이전 답변은 사실 근거가 아니다" in instruction
+        assert "even when the question, evidence, or previous_conversation" in instruction
         return httpx.Response(
             200,
             request=httpx.Request("POST", url),

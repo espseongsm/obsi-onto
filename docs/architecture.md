@@ -366,7 +366,12 @@ flowchart LR
 flowchart LR
   SYSTEM[시스템 안내 · 검색 경로] --> TEXT[ui-text.js · 알려진 표현의 영어 표시]
   SAVED[(저장된 노트 · 질문 · 답변 · 인용)] --> ORIGINAL[원문 그대로 표시]
-  QUESTION[사용자 질문] --> MODEL[LLM · 질문 언어로 답변]
+  QUESTION[현재 사용자 질문] --> LANGUAGE{다른 답변 언어 명시?}
+  LANGUAGE -->|없음| ENGLISH[영어 기본값]
+  LANGUAGE -->|있음| REQUESTED[명시한 언어]
+  ENGLISH --> MODEL[LLM · 답변 / 추천 질문 / 확인 설명]
+  REQUESTED --> MODEL
+  EVIDENCE[근거 · 이전 대화의 언어] -->|기본값을 변경하지 않음| MODEL
   MODEL --> ORIGINAL
   TEXT --> UI[English presentation · 날짜 en]
   ORIGINAL --> UI
@@ -380,6 +385,6 @@ flowchart LR
 ```
 
 - `index.html`은 `lang="en"`을 사용하며 `ui-text.js`를 다른 지연 실행 UI 스크립트보다 먼저 로드합니다. 화면 문구·접근성 이름·입력 예시는 영어이고, 날짜와 시각의 `toLocaleString` 계열은 `en` 로케일을 사용합니다.
-- `uiText()`는 알려진 시스템 메시지와 검색 경로만 표시 단계에서 영어로 바꿉니다. 사용자 질문, 노트 제목·경로·본문, 답변 문장, 인용 발췌에는 적용하지 않습니다. 저장된 한국어 콘텐츠와 스냅샷은 그대로 유지하며 새 생성 답변은 질문 언어를 따르고 불명확할 때 영어를 사용합니다.
+- `uiText()`는 알려진 시스템 메시지와 검색 경로만 표시 단계에서 영어로 바꿉니다. 사용자 질문, 노트 제목·경로·본문, 답변 문장, 인용 발췌에는 적용하지 않습니다. `Generator.request()`는 새 답변·추천 질문·확인 설명을 영어로 생성하도록 지시하며 현재 질문에서 다른 언어를 명시할 때만 이를 따릅니다. 한국어 근거와 이전 대화는 기본 언어를 바꾸지 않습니다. 인용·추출 이름·저장된 콘텐츠와 스냅샷은 원문을 유지합니다.
 - `app.js`는 답변별 그래프의 네이티브 `details`를 기본으로 열고 `GraphView.watch()`를 등록합니다. 원문 목록과 검증 정보의 `details`는 기본으로 닫아 둡니다. 사용자는 각각 독립적으로 접거나 펼칠 수 있습니다.
 - `GraphView.watch()`의 `IntersectionObserver`는 뷰포트 주변에서만 그래프를 마운트합니다. 멀어진 그래프 또는 접힌 그래프는 `capture()`로 상태를 저장하고 장면을 해제합니다. 다시 나타나면 `viewState`와 선택 ID를 복원하며 자리표시자의 높이를 유지해 스크롤 위치 변화를 줄입니다. `GraphView.dispose()`는 장면뿐 아니라 관찰자·접기 이벤트도 해제합니다. 숨겨진 탭과 페이지의 렌더링 중지는 기존 `visibility()` 경로를 유지합니다.

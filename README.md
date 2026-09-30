@@ -4,7 +4,7 @@ Ask questions about your local Obsidian vault and inspect the notes, passages, a
 
 Obsi Onto is a local, single-user app built with **SQLite FTS5 + sqlite-vec + RDFLib/SHACL**. It never edits your original Markdown files. An LLM is optional: source search and the knowledge graph work without an API key.
 
-The interface is **English by default**. Notes, questions, saved answers, and source excerpts keep their original language. Generated answers follow the language of your question, with English as the fallback when the language is unclear. Interface dates and times use the English locale.
+The interface and newly generated answers are **English by default**, including answers to questions written in another language. To receive an answer in another language, request it explicitly in your question. Notes, questions, saved answers, extracted names, and source excerpts keep their original language. Interface dates and times use the English locale.
 
 ## What you can do
 
@@ -102,7 +102,7 @@ Only one vault can be connected at a time. Switching folders requires deleting t
 
 - **Ask your notes / Evidence search:** choose a suggestion or enter a question. Select **Work**, **Investment**, **Personal**, or **All notes**, with an optional recording-date range. Use **Ask** or `⌘/Ctrl + Enter`. If generation is unavailable, **Find evidence** runs the same search and explains why the LLM is not being used.
 - **Follow-up questions:** up to 20 completed turns from the same vault configuration provide conversational context. References to a previous topic can augment the search terms. Factual evidence is retrieved and verified again for every answer. **New chat** starts a separate conversation; **Recent chats** reopens saved conversations.
-- **Read the answer first:** generated answers have citations; search-only answers show the top source excerpts. Main text appears before supporting material, using 16px type and generous line spacing. Generated answers use the question’s language; switching the interface to English does not translate saved content.
+- **Read the answer first:** generated answers have citations; search-only answers show the top source excerpts. Main text appears before supporting material, using 16px type and generous line spacing. Generated answers default to English unless your question explicitly requests another language. Saved content and source excerpts retain their original language.
 - **Inspect sources:** **Sources** is collapsed by default and shows the source count. Expand it to reveal tiles, then select a tile or citation to read the full saved passage, path, lines, date, version, search routes, and hash. Tiles use two columns, changing to one when the chat pane is 320px wide or narrower. Selecting a citation or graph node preserves the source list’s collapsed state and highlights the matching tile.
 - **See the graph immediately:** each answer’s **3D evidence graph** is open by default and can be collapsed. In long conversations, graphs are mounted near the viewport and released when far off screen or collapsed. Returning restores their saved coordinates, camera, and selection. **Sources** and **Search & verification** remain collapsed by default.
 - **Open the original:** **Open in Obsidian** opens the note; **View in graph** selects the corresponding evidence node. Selecting a graph node opens its graph inspector without automatically opening the source dialog.
@@ -326,7 +326,7 @@ There are two workers and at most eight active or awaiting-clarification jobs. E
 | Opening HTML shows launch instructions | Run the server and use its HTTP address. File URLs cannot access the API or server static paths. |
 | Suggestions only use note titles | This is the fallback without a usable model or permission. Content-based external suggestions require `OBSI_ALLOW_EXTERNAL_SUGGESTIONS=1`. |
 | Suggestions stay the same after saving notes | They regenerate after vault connection, exclusion, or date-interpretation changes, not after every file save. |
-| Old notes or answers still appear in another language | The English interface preserves original user content and stored snapshots. Ask new questions in your preferred answer language. |
+| Old notes or answers still appear in another language | Original content and stored snapshots keep their language. New generated answers default to English; explicitly request another language in your question if needed. Search-only results preserve source excerpts. |
 
 ## Development and validation
 
