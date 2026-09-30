@@ -1,0 +1,97 @@
+.new-chat{width:100%;text-align:left;margin:0 0 4px;background:var(--surface-soft);border-color:var(--line);color:var(--green);font-weight:600}
+.history button.active{background:var(--accent-soft);color:var(--green);border-radius:7px;font-weight:600}
+#chat-thread{display:grid;gap:24px;margin:0 auto 26px;max-width:920px}
+#chat-thread:empty{display:none}
+.chat-message{min-width:0}
+.chat-role{font-size:11px;font-weight:700;color:var(--muted);margin-bottom:8px}
+.chat-user{justify-self:end;max-width:min(85%,720px)}
+.chat-user .chat-role{text-align:right}
+.chat-bubble{margin:0;padding:13px 18px;background:var(--chat-user);color:var(--ink);border-radius:18px 18px 5px 18px;white-space:pre-wrap;overflow-wrap:anywhere}
+.chat-assistant{width:100%}
+.chat-answer{background:var(--paper);color:var(--ink);border:1px solid var(--line);border-radius:16px;padding:20px}
+.chat-answer .answer-header{margin:0 0 18px;align-items:baseline;flex-wrap:wrap;gap:8px}
+.chat-answer .answer-header h2{font-size:12px;font-weight:600;color:var(--muted)}
+.chat-answer .answer-label{padding:0;background:none;font-size:10px}
+.chat-answer .result-layout{grid-template-columns:1fr}
+.chat-answer .response{background:none;border:0;border-radius:0;padding:0}
+.chat-answer .response>p{font-size:16px;line-height:1.9;letter-spacing:-.15px;margin:0 0 20px;overflow-wrap:anywhere;color:var(--ink)}
+.chat-answer .response>p:last-child{margin-bottom:0}
+.chat-answer .response>p.hint{font-size:12px;color:var(--muted)}
+.chat-answer .response .citation{display:inline-block;line-height:1.4;vertical-align:baseline}
+.chat-answer .response .info-box{font-size:12px;margin:22px 0 0}
+.chat-answer .response .info-box p{font-size:12px;margin-bottom:10px}
+.chat-answer .source-card{margin-top:10px}
+.answer-support{margin-top:24px;border-top:1px solid var(--line)}
+.chat-sources,.chat-graph,.chat-answer .trace{margin:0;padding:0;border:0;border-radius:0;background:none}
+.answer-support>details+details{border-top:1px solid var(--line)}
+.chat-sources>summary,.chat-graph>summary,.chat-answer .trace>summary{padding:12px 0;cursor:pointer;color:var(--muted);font-size:12px;font-weight:500}
+.answer-support>details[open]>summary,.answer-support>details>summary:hover{color:var(--ink)}
+.answer-support>details>summary:focus-visible{outline:2px solid var(--focus);outline-offset:3px;border-radius:3px}
+.chat-answer .trace code{display:block;max-height:240px;overflow:auto;margin-bottom:14px;overflow-wrap:anywhere}
+.chat-answer .answer-meta{margin:14px 0 0;font-size:10px;line-height:1.7;white-space:pre-line}
+.chat-answer .warnings{margin:12px 0 14px;font-size:11px;line-height:1.7}
+.chat-answer .answer-extract{margin-top:14px;padding:8px 0;background:none;border:0;color:var(--muted);font-size:11px;text-align:left}
+.chat-answer .answer-extract:hover{color:var(--ink)}
+#page-ask.has-chat .intro,#page-ask.has-chat #suggestions,#page-ask.has-chat .vault-strip{display:none}
+#page-ask.has-chat{padding-top:28px}
+#page-ask.has-chat #question-form{position:sticky;bottom:12px;z-index:4;max-width:920px;margin:10px auto 0;box-shadow:0 10px 34px var(--shadow)}
+#page-ask.has-chat #question-form{padding:13px 18px 10px}
+#page-ask.has-chat #question-form textarea{min-height:56px;height:56px;padding:11px 0 4px}
+#page-ask.has-chat .under-question{max-width:920px;margin:auto}
+#page-ask.has-chat #query-progress{max-width:920px;margin:0 auto 16px}
+/* The default split gives the conversation one third and the graph two thirds. */
+#page-ask.graph-dock{--split-width:24px;max-width:none;display:grid;grid-template-columns:minmax(0,var(--chat-column,1fr)) var(--split-width) minmax(0,var(--graph-column,2fr));gap:0;align-items:start;padding:24px 28px 24px}
+.ask-main{min-width:0}
+.graph-dock .ask-main{padding:14px 2px 0}
+.graph-dock .intro{margin-bottom:26px}
+.graph-dock .intro h1{font-size:clamp(25px,2.1vw,36px);line-height:1.5;letter-spacing:-1.3px;margin-top:16px}
+.graph-dock .intro p{font-size:12px;line-height:1.9}
+.graph-dock .eyebrow{font-size:8px;letter-spacing:1.3px}
+.graph-dock .question-card{padding:19px 17px 13px;border-radius:14px}
+.graph-dock .question-card>label{font-size:11px}
+.graph-dock .question-card textarea{font-size:14px;min-height:125px;line-height:1.9}
+.graph-dock .question-tools{gap:10px;flex-wrap:wrap}
+.graph-dock .question-tools .primary{font-size:11px;padding:10px 12px;margin-left:auto}
+.graph-dock .question-tools .primary span{margin-left:9px}
+.graph-dock .filters{gap:4px}
+.graph-dock .filters select,.graph-dock .period{font-size:10px}
+.graph-dock .under-question{gap:8px;flex-wrap:wrap;font-size:9px;line-height:1.7}
+.graph-dock .suggestion-grid{grid-template-columns:1fr;gap:8px}
+.graph-dock .suggestion-grid button{min-height:0;padding:14px 34px 14px 15px;background:var(--paper)}
+.graph-dock .suggestion-grid button:hover{background:var(--surface-raised);transform:translateX(2px)}
+.graph-dock .suggestion-grid .card-icon{display:none}
+.graph-dock .suggestion-grid small{font-size:8px;margin-bottom:5px;letter-spacing:.8px}
+.graph-dock .suggestion-grid strong{font-size:12px;font-weight:600}
+.graph-dock .suggestion-grid .scenario-question{font-size:11px;margin:5px 0;line-height:1.6}
+.graph-dock .suggestion-grid .scenario-map{font-size:9px;overflow-wrap:anywhere}
+.graph-dock .suggestion-grid .card-arrow{right:13px;bottom:auto;top:18px;font-size:15px}
+.graph-dock .section-label{font-size:11px;margin-top:25px}
+.graph-dock #scenario-info{font-size:10px;line-height:1.7}
+.graph-dock .vault-strip{flex-wrap:wrap;gap:10px;padding:16px 13px;margin-top:22px}
+.graph-dock .vault-icon{font-size:20px}
+.graph-dock .vault-label{flex-basis:calc(100% - 40px)}
+.graph-dock .vault-label>span{font-size:9px}
+.graph-dock .vault-stat{min-width:60px;padding-left:10px}
+.graph-dock .vault-stat strong{font-size:17px}
+.graph-dock .sync-badge{margin-left:auto;font-size:8px}
+.graph-dock footer{flex-wrap:wrap;gap:8px;font-size:8px}
+.graph-dock .chat-answer{padding:20px 18px}
+.graph-dock .chat-bubble{font-size:13px;line-height:1.8}
+#chat-graph-panel{position:sticky;top:20px;height:calc(100vh - 121px);height:calc(100dvh - 121px);min-height:600px;min-width:0;overflow:hidden;display:flex;flex-direction:column;border:1px solid var(--graph-line);border-radius:24px;background:var(--graph-bg);color:var(--graph-ink);box-shadow:0 22px 60px var(--graph-shadow)}
+.dock-heading{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:19px 28px 0}
+.dock-title{display:flex;align-items:center;gap:10px}
+.dock-title:before{content:'';width:7px;height:7px;border:1px solid var(--graph-match-color);border-radius:50%;box-shadow:0 0 12px var(--graph-match-color)}
+.dock-heading span{display:none}
+.dock-heading h2{margin:0;font-size:11px;font-weight:500;letter-spacing:.2px;color:var(--graph-muted)}
+.dock-heading button{padding:7px 11px;font-size:10px;white-space:nowrap;color:var(--graph-ink);background:var(--graph-control);border-color:var(--graph-line);border-radius:20px}
+.dock-heading button:hover{background:var(--graph-control-hover)}
+#dock-context{padding:0 28px;margin:8px 0 0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:var(--graph-muted);font-size:10px}
+#dock-graph.graph-view{display:grid;grid-template-rows:auto minmax(0,1fr) auto auto;flex:1;min-height:0;margin:0;border:0;border-radius:0;background:none;box-shadow:none}
+#dock-graph .graph-heading{padding:26px 28px 0}
+#dock-graph .graph-stage{height:100%;min-height:0}
+#dock-graph .graph-eyebrow{display:none}
+#dock-graph .graph-heading h3{font-size:clamp(28px,2.4vw,38px)}
+#dock-graph>.hint{padding:30px;color:var(--graph-ink)}
+@media(max-width:1250px) and (min-width:1101px){#page-ask.graph-dock{--split-width:18px;padding:20px}.graph-dock .question-tools{align-items:flex-end}.graph-dock .under-question>span:last-child{display:none}}
+@media(max-width:1100px){#page-ask.graph-dock{grid-template-columns:1fr;padding:25px 28px;gap:26px}#chat-graph-panel{position:relative;top:auto;height:720px;min-height:560px}.graph-dock .suggestion-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.graph-dock .intro h1{font-size:32px}.graph-dock .question-card textarea{min-height:90px}.graph-dock .vault-label{flex-basis:0}}
+@media(max-width:760px){.new-chat{margin-top:12px}.chat-user{max-width:95%}#page-ask.graph-dock{padding:24px 16px}.graph-dock .suggestion-grid{grid-template-columns:1fr}#chat-graph-panel{height:680px;min-height:560px;border-radius:20px}.dock-heading{padding:18px 20px 0}#dock-context{padding:0 20px}#dock-graph .graph-heading{padding:22px 20px 0}#dock-graph .graph-heading h3{font-size:27px}.graph-dock .vault-label{flex-basis:calc(100% - 40px)}}

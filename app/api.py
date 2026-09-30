@@ -3,19 +3,19 @@
 import json
 import secrets
 from contextlib import asynccontextmanager
-from typing import Literal
-from urllib.parse import urlsplit
 
 from fastapi import FastAPI, HTTPException, Query, Request
 from fastapi.responses import FileResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
-from pydantic import BaseModel, Field, model_validator
+from pydantic import BaseModel, Field
 from starlette.middleware.trustedhost import TrustedHostMiddleware
 
 from app.config import ROOT, Config
 from app.folder_picker import choose_vault_folder
+from app.graph_overview import graph_overview
 from app.graph_view import graph_view
-from app.markdown import iso_date
+from app.job_api import install_job_routes
+from app.query_contracts import Question
 from app.service import Service
 
 
@@ -27,23 +27,6 @@ class VaultInput(BaseModel):
 
 class FolderInput(BaseModel):
     initial_path: str = Field(default="", max_length=4096)
-
-
-class Question(BaseModel):
-    question: str = Field(min_length=1, max_length=3000)
-    domain: Literal["all", "work", "investment", "personal"] = "all"
-    start: str | None = None
-    end: str | None = None
-    mode: Literal["lexical", "semantic", "hybrid"] = "hybrid"
-    generate: bool = True
-
-    @model_validator(mode="after")
-    def dates(self):
-        if any(value and not iso_date(value) for value in (self.start, self.end)):
-            raise ValueError("날짜는 YYYY-MM-DD로 입력하세요.")
-        if self.start and self.end and self.start > self.end:
-            raise ValueError("시작일이 종료일보다 늦습니다.")
-        return self
 
 
 class ScanInput(BaseModel):
@@ -78,13 +61,27 @@ def create_app(config=None, service=None):
     @app.middleware("http")
     async def local_boundary(request: Request, call_next):
         origin = request.headers.get("origin")
-        if origin and urlsplit(origin).netloc != request.headers.get("host"):
+        expected_origin = f"{request.url.scheme}://{request.headers.get('host', '')}"
+        if origin and origin != expected_origin:
             return JSONResponse(
-                {"detail": "다른 사이트에서는 로컬 데이터에 접근할 수 없습니다."}, 403
+                {"detail": "Other websites cannot access this app's local data."}, 403
             )
-        if request.method not in {"GET", "HEAD", "OPTIONS"}:
+        private_api = request.url.path.startswith("/api/") and request.url.path != "/api/session"
+        if request.url.path.startswith("/api/") and request.headers.get("sec-fetch-site") in {
+            "cross-site",
+            "same-site",
+        }:
+            return JSONResponse({"detail": "Send this request from the app."}, 403)
+        if private_api or request.method not in {"GET", "HEAD", "OPTIONS"}:
             if not secrets.compare_digest(request.headers.get("x-obsi-token", ""), token):
-                return JSONResponse({"detail": "이 앱 화면에서 다시 요청하세요."}, 403)
+                return JSONResponse({"detail": "Send this request again from the app."}, 403)
+        if request.method not in {"GET", "HEAD", "OPTIONS"}:
+            body = bytearray()
+            async for chunk in request.stream():
+                if len(body) + len(chunk) > 65_536:
+                    return JSONResponse({"detail": "Requests must be no larger than 64 KiB."}, 413)
+                body.extend(chunk)
+            request._body = bytes(body)
         response = await call_next(request)
         response.headers["Content-Security-Policy"] = (
             "default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:; "
@@ -97,6 +94,10 @@ def create_app(config=None, service=None):
     @app.exception_handler(ValueError)
     async def invalid(request, exc):
         return JSONResponse({"detail": str(exc)}, 400)
+
+    @app.exception_handler(KeyError)
+    async def missing(request, exc):
+        return JSONResponse({"detail": "The task or record was deleted."}, 404)
 
     def svc():
         return app.state.service
@@ -114,8 +115,10 @@ def create_app(config=None, service=None):
         return svc().status()
 
     @app.get("/api/graph")
-    def graph(q: str = Query(default="", max_length=200)):
+    def graph(q: str = Query(default="", max_length=200), overview: bool = False):
         with svc().operation:
+            if overview and not q.strip():
+                return graph_overview(svc().ontology, svc().indexer.root)
             return graph_view(svc().ontology, svc().indexer.root, query=q)
 
     @app.post("/api/vault")
@@ -155,14 +158,8 @@ def create_app(config=None, service=None):
 
     @app.post("/api/ask")
     def ask(data: Question):
-        with svc().operation:
-            if not svc().indexer.root:
-                raise ValueError("먼저 볼트를 연결하세요.")
-            svc().task = "근거 조회 중"
-            try:
-                return svc().search.ask(**data.model_dump())
-            finally:
-                svc().task = None
+        result = svc().jobs.ask(data.model_dump())
+        return JSONResponse(result, status_code=202 if "state" in result else 200)
 
     @app.get("/api/runs")
     def runs():
@@ -170,17 +167,33 @@ def create_app(config=None, service=None):
             "SELECT id,created_at,question FROM runs ORDER BY created_at DESC LIMIT 50"
         )
 
+    @app.get("/api/conversations")
+    def conversations():
+        from app.conversations import recent
+
+        return recent(svc().store)
+
+    @app.get("/api/conversations/{conversation_id}")
+    def conversation(conversation_id: str):
+        from app.conversations import turns
+
+        if len(conversation_id) != 32 or any(c not in "0123456789abcdef" for c in conversation_id):
+            raise HTTPException(404, "Conversation not found.")
+        items = turns(svc().store, conversation_id)
+        if not items:
+            raise HTTPException(404, "Conversation not found.")
+        return items
+
     @app.get("/api/runs/{run_id}")
     def run(run_id: str):
         rows = svc().store.rows("SELECT payload FROM runs WHERE id=?", (run_id,))
         if not rows:
-            raise HTTPException(404, "질문 기록이 없습니다.")
+            raise HTTPException(404, "Question history not found.")
         return json.loads(rows[0]["payload"])
 
     @app.post("/api/runs/{run_id}/extract")
     def extract(run_id: str):
-        with svc().operation:
-            return svc().search.extract(run_id)
+        return svc().search.extract(run_id)
 
     @app.get("/api/candidates")
     def candidates():
@@ -200,5 +213,6 @@ def create_app(config=None, service=None):
         svc().clear()
         return {"deleted": True}
 
+    install_job_routes(app, svc)
     app.mount("/static", StaticFiles(directory=ROOT / "web"), name="static")
     return app

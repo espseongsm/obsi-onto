@@ -1,5 +1,6 @@
 """Bounded, source-backed views of the published ontology, also saved with answers."""
 
+import json
 from urllib.parse import quote, urlencode
 
 from rdflib import RDF, RDFS
@@ -26,18 +27,21 @@ def _project(ontology, root, evidence, query):
     graph, store = ontology.graph, ontology.store
     snapshot = evidence is not None
     sources = {item["id"]: item for item in evidence or []}
-    sections = store.rows(
+    sql = (
         "SELECT s.*,n.path,n.title,n.record_date FROM sections s "
         "JOIN notes n ON n.id=s.note_id WHERE n.state='ready' AND n.revision=s.revision"
     )
     if snapshot:
-        sections = [s for s in sections if s["id"] in sources]
+        sql += " AND s.id IN (SELECT value FROM json_each(?))"
+    sections = store.rows(sql, (json.dumps(list(sources)),) if snapshot else ())
     by_section = {f"section/{s['id']}": s for s in sections}
     note_ids = {s["note_id"] for s in sections}
+    sql = "SELECT * FROM notes WHERE state='ready'"
+    if snapshot:
+        sql += " AND id IN (SELECT value FROM json_each(?))"
     notes = {
         f"note/{n['id']}": n
-        for n in store.rows("SELECT * FROM notes WHERE state='ready'")
-        if not snapshot or n["id"] in note_ids
+        for n in store.rows(sql, (json.dumps(list(note_ids)),) if snapshot else ())
     }
     nodes, edges = {}, []
     for kind in KINDS:

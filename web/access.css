@@ -1,0 +1,20 @@
+/* Connection is the first step; search remains usable without a generation model. */
+#page-ask.needs-vault{max-width:1000px;padding-top:clamp(35px,9vh,100px)}
+.needs-vault .intro,.needs-vault #chat-thread,.needs-vault #pending-questions,.needs-vault #query-progress,.needs-vault #question-form,.needs-vault .under-question,.needs-vault #suggestions,.needs-vault .vault-strip{display:none!important}
+.needs-vault .connect-card{margin:0;padding:36px;gap:22px;border-radius:22px;background:var(--paper);box-shadow:0 15px 50px var(--shadow)}
+.setup-eyebrow{display:block;margin-bottom:16px;color:var(--green);font-size:11px;font-weight:650;letter-spacing:1px}
+.connect-card #connect-title{font-size:clamp(24px,2.4vw,32px);letter-spacing:-1.1px;line-height:1.4}
+.connect-card .path-form{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:10px;margin-top:26px}
+.path-label{grid-column:1/-1;font-size:11px;color:var(--muted)}
+.connect-card .path-form input{width:100%}
+.connect-card .path-form .primary{grid-column:1/-1;margin-top:5px;padding:13px}
+.connect-card .setup-note{font-size:11px;line-height:1.8;margin:17px 0 0}
+.connect-card .text-button{margin-top:24px;font-size:11px}
+.nav:disabled,.new-chat:disabled{cursor:default;opacity:.4}
+.search-mode-notice{display:flex;gap:14px;align-items:flex-start;justify-content:space-between;padding:16px;margin:0 0 20px;border:1px solid var(--line);border-radius:12px;background:var(--accent-soft)}
+.search-mode-notice strong{font-size:12px;color:var(--green)}
+.search-mode-notice p{font-size:11px;line-height:1.75;margin:6px 0 0}
+.search-mode-notice button{flex:none;font-size:10px;padding:7px 9px;background:var(--paper);color:var(--green)}
+#ask-action-label{margin-left:0}
+@container chat-pane (max-width:420px){.search-mode-notice{flex-direction:column;gap:10px}}
+@media(max-width:760px){#page-ask.needs-vault{padding:28px 16px}.needs-vault .connect-card{padding:24px 20px}.connect-card .path-form{grid-template-columns:1fr}.connect-card .path-form>*{grid-column:1}}

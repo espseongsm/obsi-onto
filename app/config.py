@@ -40,6 +40,8 @@ class Config:
     def validate_storage(self, vault: Path | None = None):
         cloud_parts = {"Mobile Documents", "CloudStorage", "com~apple~CloudDocs"}
         if cloud_parts.intersection(self.data_dir.parts):
-            raise ValueError("색인 폴더는 iCloud·클라우드 동기화 폴더 밖이어야 합니다.")
+            raise ValueError(
+                "The index folder must be outside iCloud and other cloud-synced folders."
+            )
         if vault and self.data_dir.is_relative_to(vault):
-            raise ValueError("색인 폴더는 볼트 밖이어야 합니다.")
+            raise ValueError("The index folder must be outside the vault.")

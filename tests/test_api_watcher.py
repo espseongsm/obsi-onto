@@ -23,6 +23,7 @@ def test_api_boundary_dates_and_data_deletion(service):
         assert client.post("/api/ask", json={"question": "결제"}).status_code == 403
         token = client.get("/api/session").json()["token"]
         headers = {"x-obsi-token": token}
+        client.headers.update(headers)
         assert (
             client.post(
                 "/api/ask",

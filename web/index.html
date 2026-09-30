@@ -1,47 +1,81 @@
 <!doctype html>
-<html lang="ko">
+<html lang="en">
 <head>
   <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-  <title>Obsi Onto · 기록에 질문하기</title>
+  <title>Obsi Onto · Ask your notes</title>
+  <script src="/static/theme.js"></script>
+  <script defer src="/static/ui-text.js"></script>
   <link rel="stylesheet" href="/static/style.css">
   <link rel="stylesheet" href="/static/layout.css">
   <link rel="stylesheet" href="/static/graph.css">
+  <link rel="stylesheet" href="/static/query-jobs.css">
+  <link rel="stylesheet" href="/static/chat.css">
+  <link rel="stylesheet" href="/static/theme.css">
+  <link rel="stylesheet" href="/static/chat-split.css">
+  <link rel="stylesheet" href="/static/source-cards.css">
+  <link rel="stylesheet" href="/static/access.css">
   <link rel="icon" href="/static/icon.svg">
+  <script defer src="/static/vendor/three-graph.min.js"></script>
+  <script defer src="/static/graph-layout.js"></script>
+  <script defer src="/static/graph-categories.js"></script>
+  <script defer src="/static/graph-flight.js"></script>
+  <script defer src="/static/graph-scene.js"></script>
   <script defer src="/static/graph.js"></script>
   <script defer src="/static/scenarios.js"></script>
+  <script defer src="/static/source-cards.js"></script>
+  <script defer src="/static/chat-split.js"></script>
+  <script defer src="/static/chat-graph.js"></script>
+  <script defer src="/static/chat.js"></script>
+  <script defer src="/static/query-jobs.js"></script>
   <script defer src="/static/app.js"></script>
 </head>
 <body>
-  <aside class="sidebar">
-    <a class="brand" href="/" aria-label="Obsi Onto 홈"><span class="brand-mark">o<span>↗</span></span><strong>obsi onto<span>YOUR CONNECTED NOTES</span></strong></a>
+  <section id="launch-help" aria-labelledby="launch-title">
+    <h1 id="launch-title">Open the Obsi Onto local app</h1>
+    <p>This app runs on a local server. Opening the HTML file directly will not enable search or graphs.</p>
+    <p>Run this command in a terminal from the project folder.</p>
+    <pre><code>uv run main.py</code></pre>
+    <p><a href="http://127.0.0.1:8765/">Open local app → http://127.0.0.1:8765/</a></p>
+    <p>If the server is already running, open the link above. Use the corresponding address if you chose another port.</p>
+    <p>If this notice remains visible at the server address, refresh the page and check that JavaScript is enabled.</p>
+  </section>
+  <aside class="sidebar" hidden>
+    <a class="brand" href="/" aria-label="Obsi Onto home"><span class="brand-mark">o<span>↗</span></span><strong>obsi onto<span>YOUR CONNECTED NOTES</span></strong></a>
     <div class="space-label">WORKSPACE</div>
-    <nav aria-label="주 메뉴">
-      <button class="nav active" data-page="ask"><span>◈</span>기록에 질문하기</button>
-      <button class="nav" data-page="graph"><span>◎</span>지식 그래프</button>
-      <button class="nav" data-page="library"><span>▤</span>노트와 색인<span id="nav-count" class="nav-count">0</span></button>
-      <button class="nav" data-page="review"><span>⌘</span>관계 검토</button>
-      <button class="nav" data-page="settings"><span>⚙</span>볼트 설정</button>
+    <nav aria-label="Main navigation">
+      <button class="nav active" data-page="ask"><span>◈</span><span id="ask-nav-label">Ask your notes</span></button>
+      <button class="nav" data-page="graph"><span>◎</span>Knowledge search</button>
+      <button class="nav" data-page="library"><span>▤</span>Notes &amp; index<span id="nav-count" class="nav-count">0</span></button>
+      <button class="nav" data-page="review"><span>⌘</span>Review relationships</button>
+      <button class="nav" data-page="settings"><span>⚙</span>Vault settings</button>
     </nav>
-    <div class="history-header">최근 질문</div><div id="history" class="history"></div>
-    <div class="sidebar-bottom"><span class="status-dot"></span><span>내 컴퓨터에서 실행 중<small>원본 노트는 읽기 전용입니다</small></span></div>
+    <button id="new-chat" class="new-chat" type="button">＋ New chat</button><div class="history-header">Recent chats</div><div id="history" class="history"></div>
+    <div class="sidebar-bottom"><span class="status-dot"></span><span>Running on your computer<small>Your notes stay read-only</small></span></div>
   </aside>
-  <main>
-    <header class="topbar"><div><span class="crumb">나의 지식 공간</span><span class="slash">/</span><span id="page-name">기록에 질문하기</span></div><span class="local-pill">● LOCAL WORKSPACE</span></header>
+  <main hidden>
+    <header class="topbar"><div class="breadcrumbs"><span class="crumb">My knowledge space</span><span class="slash">/</span><span id="page-name">Ask your notes</span></div><div class="topbar-actions"><div class="theme-switch" role="group" aria-label="Color theme"><button type="button" data-theme-mode="light" aria-pressed="false"><span aria-hidden="true">☀</span> Light</button><button type="button" data-theme-mode="dark" aria-pressed="false"><span aria-hidden="true">◐</span> Dark</button><button type="button" data-theme-mode="ai" aria-pressed="true"><span aria-hidden="true">✦</span> AI</button></div><span class="local-pill">● LOCAL WORKSPACE</span></div></header>
     <div id="toast" class="toast" role="status" hidden></div>
-    <section id="page-ask" class="page">
-      <div class="intro"><div class="eyebrow"><span></span> FROM NOTES TO KNOWLEDGE</div><h1>기록은 쌓이고,<br>생각은 연결됩니다.</h1><p>업무의 맥락부터 투자의 판단까지.<br>내 노트에 질문하고, 답의 근거를 직접 확인하세요.</p></div>
-      <section id="onboarding" class="connect-card"><div class="step-badge">01</div><div><h2>먼저, 나의 볼트를 연결하세요</h2><p>Obsidian 노트가 담긴 로컬 폴더 경로를 입력하세요. iCloud 폴더도 연결할 수 있습니다.</p><form id="quick-connect" class="path-form"><input id="quick-path" aria-label="볼트 폴더 경로" placeholder="/Users/내이름/Documents/My Vault" required><button type="button" class="pick-folder" data-target="quick-path">Finder로 선택</button><button class="primary">볼트 연결 ↗</button></form><button id="demo" class="text-button">가상의 업무·투자 노트로 먼저 둘러보기 →</button></div></section>
-      <form id="question-form" class="question-card"><label for="question">기록에서 무엇을 찾고 싶으세요?</label><textarea id="question" rows="3" placeholder="프로젝트 B의 방향을 바꾼 이유는 무엇이었지?" maxlength="3000" required></textarea><div class="question-tools"><div class="filters"><select id="domain" aria-label="검색 영역"><option value="all">모든 기록</option><option value="work">회사 업무</option><option value="investment">투자 일지</option><option value="personal">개인 생각</option></select><details class="period"><summary>기간 선택</summary><div><label>기록 시작일<input id="start" type="date"></label><label>기록 종료일<input id="end" type="date"></label></div></details></div><button id="ask-button" class="primary">근거 찾기 <span>↗</span></button></div></form>
-      <div class="under-question"><span><i class="tiny-dot"></i><span id="model-mode">원문 근거로 답합니다</span></span><span>⌘ / Ctrl + Enter</span></div>
-      <details id="suggestions" open><summary id="scenario-title" class="section-label">예상 질문</summary><p id="scenario-info" class="hint" aria-live="polite">볼트 정보를 불러오는 중입니다.</p><div id="scenario-cards" class="suggestion-grid"></div></details>
-      <section id="answer" hidden></section>
-      <section class="vault-strip"><div class="vault-icon">▤</div><div class="vault-label"><strong id="vault-title">연결된 볼트가 없습니다</strong><span id="vault-caption">노트의 원문과 출처를 함께 보관합니다.</span></div><div class="vault-stat"><strong id="stat-notes">—</strong><span>색인된 노트</span></div><div class="vault-stat"><strong id="stat-links">—</strong><span>명시적 연결</span></div><span id="sync-badge" class="sync-badge">연결 대기</span></section>
-      <footer>내 기록, 내 맥락, 내 컴퓨터.<span>Obsi Onto / 0.1</span></footer>
+    <section id="page-ask" class="page needs-vault">
+      <div id="chat-main" class="ask-main">
+      <div class="intro"><div class="eyebrow"><span></span> FROM NOTES TO KNOWLEDGE</div><h1>Notes grow.<br>Ideas connect.</h1><p>From work decisions to investment insights.<br>Ask your notes and explore the sources behind each answer.</p></div>
+      <section id="onboarding" class="connect-card" aria-labelledby="connect-title"><div class="step-badge">01</div><div><span class="setup-eyebrow">START WITH YOUR NOTES</span><h2 id="connect-title">Which vault would you like to connect?</h2><p>Connect the folder containing your Obsidian notes to start searching.</p><form id="quick-connect" class="path-form"><label class="path-label" for="quick-path">Vault folder path</label><input id="quick-path" placeholder="/Users/yourname/Documents/My Vault" required><button type="button" class="pick-folder" data-target="quick-path">Choose in Finder</button><button class="primary">Connect vault ↗</button></form><p class="setup-note">Your notes stay read-only. Search source evidence and your knowledge graph without an API key.</p><button id="demo" class="text-button">Explore sample notes first →</button></div></section>
+      <section id="search-mode-notice" class="search-mode-notice" role="status" hidden><div><strong>Evidence search mode</strong><p id="search-mode-reason"></p><p>Search source evidence and your knowledge graph. Connect an LLM to enable summaries and generated answers.</p></div><button id="model-help" type="button">LLM setup guide ↗</button></section>
+      <section id="chat-thread" aria-label="Conversation" aria-live="polite"></section>
+      <div id="pending-questions" aria-label="Questions in progress or awaiting clarification"></div>
+      <section id="query-progress" aria-label="Answer progress" hidden></section>
+      <form id="question-form" class="question-card"><label for="question">What would you like to find in your notes?</label><textarea id="question" rows="3" placeholder="Why did Project B change direction?" maxlength="3000" required></textarea><div class="question-tools"><div class="filters"><select id="domain" aria-label="Search scope"><option value="all">All notes</option><option value="work">Work</option><option value="investment">Investment</option><option value="personal">Personal</option></select><details class="period"><summary>Date range</summary><div><label>Recorded from<input id="start" type="date"></label><label>Recorded through<input id="end" type="date"></label></div></details></div><button id="ask-button" class="primary"><span id="ask-action-label">Ask question</span> <span>↗</span></button></div></form>
+      <div class="under-question"><span><i class="tiny-dot"></i><span id="model-mode">Answers grounded in your sources</span></span><span>⌘ / Ctrl + Enter</span></div>
+      <details id="suggestions" open><summary id="scenario-title" class="section-label">Suggested questions</summary><p id="scenario-info" class="hint" aria-live="polite">Loading vault information…</p><div id="scenario-cards" class="suggestion-grid"></div></details>
+      <section class="vault-strip"><div class="vault-icon">▤</div><div class="vault-label"><strong id="vault-title">No vault connected</strong><span id="vault-caption">Keep your source text and its provenance together.</span></div><div class="vault-stat"><strong id="stat-notes">—</strong><span>Indexed notes</span></div><div class="vault-stat"><strong id="stat-links">—</strong><span>Explicit links</span></div><span id="sync-badge" class="sync-badge">Not connected</span></section>
+      <footer>Your notes. Your context. Your computer.<span>Obsi Onto / 0.1</span></footer>
+      </div>
+      <div id="chat-splitter" role="separator" tabindex="0" aria-label="Resize chat and knowledge graph" aria-orientation="vertical" aria-controls="chat-main chat-graph-panel" aria-valuemin="25" aria-valuemax="65" aria-valuenow="33" aria-valuetext="Chat 33%, knowledge graph 67%" aria-describedby="split-help" title="Drag to resize · Double-click to restore the default 1:2 ratio"><span class="split-grip" aria-hidden="true"></span><span id="split-readout" aria-hidden="true">Chat 33 · Graph 67</span><span id="split-help" hidden>Use the left and right arrow keys to resize. Hold Shift for larger changes. Press Home or double-click to restore the default 1:2 ratio. Press Escape while dragging to cancel.</span></div>
+      <aside id="chat-graph-panel" aria-label="Knowledge graph beside the conversation" hidden><div class="dock-heading"><div class="dock-title"><span>KNOWLEDGE MAP</span><h2>Knowledge graph</h2></div><div class="dock-actions"><button id="split-reset" type="button" aria-label="Restore the default 1:2 chat-to-graph ratio" title="Chat : Graph = 1 : 2">Reset split</button><button id="dock-switch" type="button" hidden>Whole vault</button></div></div><p id="dock-context" class="hint">Loading vault connections…</p><div id="dock-graph"></div></aside>
     </section>
-    <section id="page-library" class="page" hidden><div class="page-heading"><div><div class="eyebrow">INDEX HEALTH</div><h1>노트와 색인</h1><p>읽을 수 있는 현재 기록만 질문의 근거로 사용합니다.</p></div><div class="actions"><button id="scan">지금 갱신</button><button id="deep">정밀 검사</button></div></div><div id="scan-info" class="info-box"></div><div id="scan-errors"></div><div class="table-wrap"><table><thead><tr><th>노트</th><th>상태</th><th>버전</th><th>안내</th></tr></thead><tbody id="notes-table"></tbody></table></div><h2 class="subheading">확인이 필요한 링크</h2><div id="quality"></div></section>
-    <section id="page-graph" class="page" hidden><div class="eyebrow">EXPLORE CONNECTIONS</div><h1>지식 그래프</h1><p>노트에서 문단으로, 문단에서 생각의 근거로.</p><form id="graph-form" class="graph-search"><input id="graph-query" aria-label="그래프에서 이름이나 본문 찾기" placeholder="노트·주제 이름 또는 본문 단어 (예: A기업)" maxlength="200"><button class="primary">찾기 ↗</button><button id="graph-reset" type="button">현재 색인 새로고침</button></form><p class="hint">이름·본문에 포함된 글자를 찾습니다. 자연어 의미 검색은 ‘기록에 질문하기’를 이용하세요.</p><div id="vault-graph" aria-live="polite"></div></section>
-    <section id="page-review" class="page" hidden><div class="eyebrow">MEANING & PROVENANCE</div><h1>관계 검토</h1><p>모델이 제안한 관계는 확인하기 전까지 검색의 확정 관계에 포함하지 않습니다.</p><div id="candidates"></div></section>
-    <section id="page-settings" class="page" hidden><div class="eyebrow">LOCAL FIRST</div><h1>볼트 설정</h1><div class="settings-grid"><form id="settings-form" class="panel"><h2>노트가 있는 곳</h2><label for="vault-path">볼트 폴더 경로</label><div class="folder-path"><input id="vault-path" required placeholder="/Users/…/My Vault"><button type="button" class="pick-folder" data-target="vault-path">Finder로 선택</button></div><p class="hint">Finder에서 로컬 또는 iCloud Drive 폴더를 선택하거나 경로를 직접 입력하세요.</p><label>제외 폴더·패턴 <small>한 줄에 하나씩 입력</small><textarea id="excludes" rows="3" placeholder="Private&#10;Archive/**"></textarea></label><label class="checkbox"><input id="daily-dates" type="checkbox" checked>YYYY-MM-DD 노트 이름을 기록일로 사용</label><p class="hint">iCloud 볼트는 Finder에서 ‘다운로드 유지’를 권장합니다. 이 앱은 동기화 완료 여부를 판단하지 않습니다.</p><p class="hint">경로·제외 규칙·날짜 해석 설정이 바뀌면 색인 후 예상 질문을 다시 만듭니다. 질문 생성에 사용하는 노트 범위는 ‘모델과 데이터’에서 확인하세요.</p><button class="primary">연결 설정 저장</button></form><div class="panel"><h2>모델과 데이터</h2><div id="model-info"></div><button id="prepare-model">로컬 의미 검색 모델 준비</button><p class="hint">처음 한 번 공개 모델 파일을 다운로드합니다. 로컬 모델은 노트와 질문을 외부로 전송하지 않습니다.</p><div class="divider"></div><h3>생성 모델은 선택 사항입니다</h3><p class="hint">설정하지 않아도 원문 근거를 찾을 수 있습니다. 생성 모델과 외부 임베딩은 각각 환경변수로 설정합니다. 자세한 내용은 README를 확인하세요.</p><div class="divider"></div><h3>로컬 색인 삭제</h3><p class="hint">검색 색인·질문 기록·검토 결과를 삭제하고 볼트 연결을 해제합니다. 원본 노트와 공개 모델 파일은 보존합니다.</p><button id="delete-data" class="danger">로컬 색인과 기록 삭제</button></div><form id="tuning-form" class="panel"><h2>자동 갱신</h2><label>저장 안정화 대기 (초)<input id="debounce" type="number" min="0.5" max="30" step="0.5" value="2"></label><label>메타데이터 보완 대조 (분)<input id="interval" type="number" min="5" max="1440" value="30"></label><p class="hint">OS 변경 알림을 우선 사용합니다. 보완 대조는 본문을 읽지 않으며 질문·색인 작업 중에는 연기합니다.</p><button>갱신 설정 저장</button></form></div></section>
+    <section id="page-library" class="page" hidden><div class="page-heading"><div><div class="eyebrow">INDEX HEALTH</div><h1>Notes &amp; index</h1><p>Only current, readable notes are used as evidence for answers.</p></div><div class="actions"><button id="scan">Refresh now</button><button id="deep">Deep scan</button></div></div><div id="scan-info" class="info-box"></div><div id="scan-errors"></div><div class="table-wrap"><table><thead><tr><th>Note</th><th>Status</th><th>Version</th><th>Details</th></tr></thead><tbody id="notes-table"></tbody></table></div><h2 class="subheading">Links to review</h2><div id="quality"></div></section>
+    <section id="page-graph" class="page" hidden><div class="eyebrow">EXPLORE CONNECTIONS</div><h1>Knowledge search</h1><p>From notes to passages, and from passages to the sources behind your ideas.</p><form id="graph-form" class="graph-search"><input id="graph-query" aria-label="Search names or text in the graph" placeholder="Note or topic name, or a word in your notes" maxlength="200"><button class="primary">Search ↗</button><button id="graph-reset" type="button">Refresh index</button></form><p class="hint">Find text in names and note content. Use “Ask your notes” for natural-language semantic search.</p><div id="vault-graph" aria-live="polite"></div></section>
+    <section id="page-review" class="page" hidden><div class="eyebrow">MEANING & PROVENANCE</div><h1>Review relationships</h1><p>Model-suggested relationships are included in confirmed search relationships only after your review.</p><div id="candidates"></div></section>
+    <section id="page-settings" class="page" hidden><div class="eyebrow">LOCAL FIRST</div><h1>Vault settings</h1><div class="settings-grid"><form id="settings-form" class="panel"><h2>Your notes folder</h2><label for="vault-path">Vault folder path</label><div class="folder-path"><input id="vault-path" required placeholder="/Users/…/My Vault"><button type="button" class="pick-folder" data-target="vault-path">Choose in Finder</button></div><p class="hint">Choose a local or iCloud Drive folder in Finder, or enter its path.</p><label>Excluded folders and patterns <small>One per line</small><textarea id="excludes" rows="3" placeholder="Private&#10;Archive/**"></textarea></label><label class="checkbox"><input id="daily-dates" type="checkbox" checked>Use YYYY-MM-DD note names as recording dates</label><p class="hint">For iCloud vaults, choose “Keep Downloaded” in Finder. This app does not verify whether cloud sync has finished.</p><p class="hint">Changing the path, exclusions, or date settings regenerates suggested questions after indexing. See “Models &amp; data” for the notes used to generate questions.</p><button class="primary">Save vault settings</button></form><div class="panel"><h2>Models &amp; data</h2><div id="model-info"></div><button id="prepare-model">Prepare local search model</button><p class="hint">Downloads the public model files once. The local model keeps your notes and questions on your computer.</p><div class="divider"></div><h3>A generation model is optional</h3><p class="hint">You can find source evidence without one. Configure generation and external embeddings separately with environment variables. See the README for details.</p><div class="divider"></div><h3>Delete local index</h3><p class="hint">Deletes the search index, chat history, and review results, then disconnects the vault. Your original notes and downloaded model files are preserved.</p><button id="delete-data" class="danger">Delete local index and history</button></div><form id="tuning-form" class="panel"><h2>Automatic updates</h2><label>Wait after a save (seconds)<input id="debounce" type="number" min="0.5" max="30" step="0.5" value="2"></label><label>Metadata reconciliation interval (minutes)<input id="interval" type="number" min="5" max="1440" value="30"></label><p class="hint">Uses file-system notifications first. Reconciliation checks metadata without reading note content and waits while queries or indexing are running.</p><button>Save update settings</button></form></div></section>
   </main>
 </body>
 </html>

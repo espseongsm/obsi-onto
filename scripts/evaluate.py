@@ -8,7 +8,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
-from app.config import ROOT, Config
+from app.config import LOCAL_MODEL, ROOT, Config
 from app.models import Embedder
 from app.search import plan
 from app.service import Service
@@ -38,7 +38,15 @@ CASES = [
 
 
 def main():
-    config = Config()
+    config = Config(
+        embedding_provider="local",
+        embedding_model=LOCAL_MODEL,
+        external_embedding=False,
+        generation_url="",
+        generation_model="",
+        external_generation=False,
+        external_suggestions=False,
+    )
     embedder = Embedder(config)
     if not embedder.ready:
         raise SystemExit(
@@ -46,7 +54,16 @@ def main():
         )
     results, detail = {}, []
     with tempfile.TemporaryDirectory(prefix="obsi-eval-") as directory:
-        service = Service(Config(data_dir=Path(directory)), embedder)
+        service = Service(
+            Config(
+                data_dir=Path(directory),
+                generation_url="",
+                generation_model="",
+                external_generation=False,
+                external_suggestions=False,
+            ),
+            embedder,
+        )
         service.store.put("vault", str(ROOT / "examples/vault"))
         started = time.perf_counter()
         service.indexer.reconcile()

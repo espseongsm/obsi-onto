@@ -1,0 +1,12 @@
+{
+  "name": "obsi-onto-graph",
+  "private": true,
+  "scripts": {
+    "build:graph": "node scripts/build-graph.mjs",
+    "test:graph": "node --test tests/graph-layout.test.cjs"
+  },
+  "devDependencies": {
+    "esbuild": "0.25.10",
+    "three": "0.180.0"
+  }
+}

@@ -9,7 +9,7 @@ _dialog_lock = threading.Lock()
 _CHOOSE_FOLDER = """on run argv
     try
         activate
-        set chosenFolder to choose folder with prompt "Obsidian 볼트 폴더를 선택하세요" ¬
+        set chosenFolder to choose folder with prompt "Choose your Obsidian vault folder" ¬
             default location (POSIX file (item 1 of argv))
         return POSIX path of chosenFolder
     on error errorMessage number errorNumber
@@ -21,9 +21,13 @@ end run"""
 
 def choose_vault_folder(initial_path=""):
     if sys.platform != "darwin":
-        raise ValueError("Finder 폴더 선택은 macOS에서 지원합니다. 폴더 경로를 직접 입력하세요.")
+        raise ValueError(
+            "Finder folder selection is available on macOS. Enter the folder path manually."
+        )
     if not _dialog_lock.acquire(blocking=False):
-        raise ValueError("이미 폴더 선택 창이 열려 있습니다. 해당 창에서 선택하거나 취소하세요.")
+        raise ValueError(
+            "A folder selection window is already open. Choose a folder or cancel in that window."
+        )
     try:
         start = Path(initial_path).expanduser() if initial_path else Path.home()
         if not start.is_absolute() or not start.is_dir():
@@ -38,20 +42,20 @@ def choose_vault_folder(initial_path=""):
         )
         if result.returncode:
             raise ValueError(
-                "폴더 선택 창을 열지 못했습니다. 경로를 직접 입력하거나 다시 시도하세요."
+                "Could not open the folder selection window. Enter the path manually or try again."
             )
         selected = result.stdout.removesuffix("\n")
         if not selected:
             return None
         path = Path(selected)
         if not path.is_absolute() or not path.is_dir():
-            raise ValueError("선택한 폴더를 찾을 수 없습니다. 폴더 위치를 다시 확인하세요.")
+            raise ValueError("The selected folder was not found. Check its location.")
         return str(path)
     except subprocess.TimeoutExpired as exc:
-        raise ValueError(
-            "폴더 선택 시간이 만료되었습니다. Finder로 선택을 다시 눌러주세요."
-        ) from exc
+        raise ValueError("Folder selection timed out. Choose the Finder option again.") from exc
     except OSError as exc:
-        raise ValueError("폴더 선택을 사용할 수 없습니다. 폴더 경로를 직접 입력하세요.") from exc
+        raise ValueError(
+            "Folder selection is unavailable. Enter the folder path manually."
+        ) from exc
     finally:
         _dialog_lock.release()

@@ -35,10 +35,14 @@ def test_main_loads_project_env_and_preserves_shell_values(tmp_path, monkeypatch
     monkeypatch.setattr("sys.argv", ["main.py", "--port", "8877"])
     started = {}
 
-    def run(app, **kwargs):
-        started.update(config=app, **kwargs)
+    def run(server):
+        started.update(
+            config=server.config.app,
+            host=server.config.host,
+            port=server.config.port,
+        )
 
-    monkeypatch.setattr(main.uvicorn, "run", run)
+    monkeypatch.setattr(main.LocalAppServer, "run", run)
     main.main()
     config = started["config"]
     assert config.generation_url == "https://example.test/openai/v1/"
@@ -88,3 +92,42 @@ def test_luna_request_omits_unsupported_temperature_and_keeps_citations(monkeypa
     monkeypatch.setattr("app.models.httpx.post", post)
     answer = Generator(config).request("시연일은?", evidence)
     assert Search.validate_sentences(answer, evidence)[0]["citations"] == ["S1"]
+
+
+def test_follow_up_context_is_separate_from_current_evidence(monkeypatch):
+    monkeypatch.setenv("OBSI_LLM_API_KEY", "dummy-test-key")
+    config = Config(
+        generation_url="https://example.test/openai/v1/",
+        generation_model="gpt-5.6-luna",
+        external_generation=True,
+    )
+    evidence = [{"citation": "S1", "text": "현재 검증된 문단"}]
+    previous = [{"question": "지난 질문", "answer": "지난 답변"}]
+
+    def post(url, **options):
+        message = json.loads(options["json"]["messages"][1]["content"])
+        assert message["evidence"] == evidence
+        assert message["previous_conversation"] == previous
+        assert "user_clarification" not in message
+        assert "이전 답변은 사실 근거가 아니다" in options["json"]["messages"][0]["content"]
+        return httpx.Response(
+            200,
+            request=httpx.Request("POST", url),
+            json={
+                "choices": [
+                    {
+                        "message": {
+                            "content": json.dumps(
+                                {"sentences": [{"text": "현재 답변", "citations": ["S1"]}]}
+                            )
+                        }
+                    }
+                ]
+            },
+        )
+
+    monkeypatch.setattr("app.models.httpx.post", post)
+    result = Generator(config).request(
+        "이어지는 질문", evidence, "answer", {"conversation": previous}
+    )
+    assert result["sentences"][0]["citations"] == ["S1"]

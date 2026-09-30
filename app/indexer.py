@@ -2,6 +2,7 @@
 
 import json
 import resource
+import stat
 import time
 import uuid
 from datetime import datetime, timezone
@@ -97,7 +98,9 @@ class Indexer:
                         (note_id, path, meta["identity"]),
                     )
                 if not meta["available"]:
-                    self._error(note_id, "다운로드 대기: iCloud 파일을 다운로드 유지로 설정하세요.")
+                    self._error(
+                        note_id, "Download pending: set the iCloud file to Keep Downloaded."
+                    )
                     continue
                 try:
                     self._index(root, path, note_id, old, moved)
@@ -139,7 +142,7 @@ class Indexer:
         if paths is None:
             return scan(root, rules)
         if not root.is_dir():
-            return {}, ["볼트에 접근할 수 없습니다."]
+            return {}, ["The vault could not be accessed."]
         found, errors = {}, []
         for path in paths:
             if excluded(path, rules):
@@ -147,6 +150,8 @@ class Indexer:
             try:
                 file = safe_path(root, path)
                 st = file.stat()
+                if not stat.S_ISREG(st.st_mode):
+                    continue
                 found[path] = {
                     "signature": signature(st),
                     "identity": f"{st.st_dev}:{st.st_ino}",
@@ -168,15 +173,13 @@ class Indexer:
         text, sig = read_stable(root, path)
         self.metrics["body_reads"] += 1
         source_hash = digest(text)
-        if (
-            old
-            and old["hash"] == source_hash
-            and not moved
-            and (not self.embedder.ready or old["vector_state"] == self.embedder.key)
-        ):
+        if old and old["hash"] == source_hash and not moved:
+            if self.embedder.ready and old["vector_state"] != self.embedder.key:
+                self._retry_vectors(root, path, note_id, old, text)
             with self.store.transaction() as db:
                 db.execute(
-                    "UPDATE notes SET signature=?,state='ready',error=NULL WHERE id=?",
+                    "UPDATE notes SET signature=?,state='ready',"
+                    "error=CASE WHEN vector_state='pending' THEN error ELSE NULL END WHERE id=?",
                     (sig, note_id),
                 )
             return
@@ -187,12 +190,14 @@ class Indexer:
             try:
                 vectors = self._vectors(parsed)
             except Exception as exc:
-                vector_error = f"의미 색인 대기: {type(exc).__name__}"
+                vector_error = f"Semantic indexing pending: {type(exc).__name__}"
         # Re-read only this changed source, after any slow embedding work, before publishing.
         latest, latest_sig = read_stable(root, path)
         self.metrics["body_reads"] += 1
         if digest(latest) != source_hash:
-            raise OSError("처리 중 노트가 다시 바뀌었습니다. 최신 버전을 다시 색인합니다.")
+            raise OSError(
+                "The note changed during processing. Its latest version will be indexed again."
+            )
         preserved = self._unchanged_reviews(note_id, parsed, old)
         with self.store.transaction() as db:
             self.store.remove_sections(db, note_id)
@@ -280,6 +285,55 @@ class Indexer:
                     note_id,
                 ),
             )
+            self._retry_state(db, note_id, vector_error)
+
+    def _retry_state(self, db, note_id, error):
+        attempts = self.store.rows("SELECT vector_attempts FROM notes WHERE id=?", (note_id,))[0][
+            "vector_attempts"
+        ]
+        db.execute(
+            "UPDATE notes SET vector_attempts=?,vector_retry_at=? WHERE id=?",
+            (
+                min(attempts + 1, 10) if error else 0,
+                time.time() + min(1800, 30 * 2 ** min(attempts, 6)) if error else 0,
+                note_id,
+            ),
+        )
+
+    def _retry_vectors(self, root, path, note_id, old, text):
+        parsed = parse_markdown(text, path, self.store.get("daily_pattern", r"^\d{4}-\d{2}-\d{2}$"))
+        try:
+            vectors = self._vectors(parsed)
+        except Exception as exc:
+            with self.store.transaction() as db:
+                db.execute(
+                    "UPDATE notes SET vector_state='pending',error=? WHERE id=?",
+                    (f"Semantic indexing pending: {type(exc).__name__}", note_id),
+                )
+                self._retry_state(db, note_id, True)
+            return
+        latest, _ = read_stable(root, path)
+        self.metrics["body_reads"] += 1
+        if digest(latest) != old["hash"]:
+            raise OSError("The source text changed during the vector update.")
+        sections = self.store.rows(
+            "SELECT id,hash FROM sections WHERE note_id=? ORDER BY start", (note_id,)
+        )
+        if [s["hash"] for s in sections] != [s["hash"] for s in parsed["sections"]]:
+            raise ValueError("The passage structure changed. Run a deep scan.")
+        with self.store.transaction() as db:
+            for stored, section in zip(sections, parsed["sections"], strict=True):
+                key = section["embedding_key"]
+                db.execute("DELETE FROM vectors WHERE rowid=?", (stored["id"],))
+                db.execute(
+                    "INSERT INTO vectors(rowid,embedding) VALUES(?,?)", (stored["id"], vectors[key])
+                )
+                db.execute("UPDATE sections SET embedding_key=? WHERE id=?", (key, stored["id"]))
+            db.execute(
+                "UPDATE notes SET vector_state=?,error=NULL WHERE id=?",
+                (self.embedder.key, note_id),
+            )
+            self._retry_state(db, note_id, False)
 
     def _unchanged_reviews(self, note_id, parsed, old):
         if (
