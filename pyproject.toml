@@ -1,0 +1,30 @@
+[project]
+name = "obsi-onto"
+version = "0.1.0"
+description = "Local, evidence-first questions for an Obsidian vault"
+requires-python = ">=3.12,<3.14"
+dependencies = [
+  "fastapi>=0.115,<1",
+  "uvicorn>=0.34,<1",
+  "pyyaml>=6,<7",
+  "sqlite-vec==0.1.6",
+  "rdflib>=7.1,<8",
+  "pyshacl>=0.30,<1",
+  "watchdog>=6,<8",
+  "fastembed>=0.7,<0.8",
+  "httpx>=0.28,<1",
+  "python-dotenv>=1,<2",
+]
+
+[dependency-groups]
+dev = ["pytest>=8,<10", "ruff>=0.11,<1"]
+
+[tool.ruff]
+line-length = 100
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "B"]
+
+[tool.pytest.ini_options]
+pythonpath = ["."]
+testpaths = ["tests"]

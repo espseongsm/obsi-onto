@@ -1,0 +1,29 @@
+.graph-view{margin:24px 0;border:1px solid var(--line);border-radius:12px;background:#fff;overflow:hidden}
+.graph-heading{display:flex;justify-content:space-between;gap:12px;align-items:center;padding:22px 24px 0}
+.graph-heading h3{margin:0;font-size:17px;font-weight:600}
+.graph-caption{padding:0 24px;font-size:12px;color:var(--muted);line-height:1.8}
+.graph-limit{padding:0 24px}
+.graph-legend{display:flex;flex-wrap:wrap;gap:14px;padding:8px 24px 18px;font-size:10px;color:var(--muted)}
+.graph-legend span:before{content:'';display:inline-block;width:7px;height:7px;background:var(--node-color,#789064);border-radius:50%;margin-right:5px}
+.kind-Note{--node-color:#58754b}.kind-Section{--node-color:#b2c997}.kind-Topic{--node-color:#ba8c60}.kind-Tag{--node-color:#a5abb3}.kind-Claim{--node-color:#9a79aa}.kind-Activity{--node-color:#689aa2}
+.graph-legend .legend-match:before{background:white;border:2px solid #34633d}.graph-legend .legend-picked:before{background:white;border:2px solid #d18a35}
+.graph-toolbar{display:flex;gap:12px;justify-content:space-between;padding:12px 24px;border-block:1px solid #edf0e8;background:#fafbf8;flex-wrap:wrap}
+.graph-toolbar select{max-width:100%;min-width:0;flex:1;font-size:11px;padding:8px;border:1px solid var(--line);border-radius:6px;background:white}
+.graph-controls{display:flex;gap:5px}.graph-controls button{font-size:11px;padding:8px 11px}
+.graph-view>svg{display:block;width:100%;height:auto;min-height:270px;max-height:560px;background:radial-gradient(ellipse at center,#fbfcf7, #f4f6ef);touch-action:none;cursor:grab}
+.graph-edge{stroke:#adb9a4;stroke-width:1;opacity:.58}.graph-edge.edge-linksTo{stroke:#749362;stroke-width:1.7}.graph-edge.edge-taggedWith{stroke-dasharray:3 4}
+.graph-edge.highlighted{stroke:#557548;stroke-width:2;opacity:.9}.graph-edge.dim{opacity:.12}
+.graph-node{cursor:pointer;outline:none}.graph-node circle{fill:var(--node-color);stroke:white;stroke-width:2}
+.graph-node text{font-family:inherit;font-size:12px;fill:#45513e;paint-order:stroke;stroke:#f8faf4;stroke-width:4;stroke-linejoin:round}
+.graph-node.kind-Note text{font-weight:700;font-size:13px}.graph-node.matched circle{stroke:#34633d;stroke-width:3.5}
+.graph-node.picked circle,.graph-node:focus circle{stroke:#d18a35;stroke-width:5}.graph-node.picked text{font-weight:700;fill:#9b5e21}.graph-node.dim{opacity:.22}
+.graph-node:hover circle{stroke:#d18a35;stroke-width:3}.graph-node:hover{opacity:1}
+.graph-inspector{padding:21px 24px;border-top:1px solid var(--line);min-height:103px;overflow-wrap:anywhere}
+.graph-inspector strong{font-size:13px}.graph-inspector pre{font-family:inherit;font-size:12px;line-height:1.9;white-space:pre-wrap;max-height:145px;overflow:auto;background:#f7f8f3;padding:12px;border-radius:5px}
+.graph-inspector>a{display:inline-block;font-size:11px;margin:8px 18px 0 0;color:var(--green)}
+.graph-relations{display:flex;flex-wrap:wrap;gap:6px;list-style:none;padding:0;max-height:100px;overflow:auto}.graph-relations button{font-size:10px;padding:6px 9px;text-align:left}
+.graph-search{display:flex;gap:10px;margin:25px 0 10px;flex-wrap:wrap}.graph-search input{flex:1;min-width:180px}
+.source-card.selected-source{border-color:#ce913f;box-shadow:0 0 0 2px #f7e6ce}.source-card .show-in-graph{display:block;margin:12px 0 0;padding:6px 9px;font-size:10px}
+#suggestions{margin:25px 0}#suggestions>summary{cursor:pointer;list-style:none}#suggestions>summary:after{content:'열기 +';margin-left:auto;font-size:10px;color:var(--green)}#suggestions[open]>summary:after{content:'접기 −'}
+.suggestion-grid button{min-height:190px}.suggestion-grid .scenario-question{font-size:12px;color:#5f6b57;line-height:1.7;margin:9px 0}.scenario-map{font-size:9px;color:#89947f;line-height:1.7}
+@media(max-width:760px){.graph-heading{padding:18px 16px 0;align-items:start;flex-direction:column}.graph-caption,.graph-limit{padding:0 16px}.graph-legend{padding:8px 16px 14px;gap:10px}.graph-toolbar{padding:12px 16px}.graph-toolbar select{flex-basis:100%}.graph-inspector{padding:17px 16px}.graph-view>svg{min-height:310px}.suggestion-grid button{min-height:140px}.scenario-map{font-size:10px}}

@@ -1,0 +1,47 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Obsi Onto · 기록에 질문하기</title>
+  <link rel="stylesheet" href="/static/style.css">
+  <link rel="stylesheet" href="/static/layout.css">
+  <link rel="stylesheet" href="/static/graph.css">
+  <link rel="icon" href="/static/icon.svg">
+  <script defer src="/static/graph.js"></script>
+  <script defer src="/static/scenarios.js"></script>
+  <script defer src="/static/app.js"></script>
+</head>
+<body>
+  <aside class="sidebar">
+    <a class="brand" href="/" aria-label="Obsi Onto 홈"><span class="brand-mark">o<span>↗</span></span><strong>obsi onto<span>YOUR CONNECTED NOTES</span></strong></a>
+    <div class="space-label">WORKSPACE</div>
+    <nav aria-label="주 메뉴">
+      <button class="nav active" data-page="ask"><span>◈</span>기록에 질문하기</button>
+      <button class="nav" data-page="graph"><span>◎</span>지식 그래프</button>
+      <button class="nav" data-page="library"><span>▤</span>노트와 색인<span id="nav-count" class="nav-count">0</span></button>
+      <button class="nav" data-page="review"><span>⌘</span>관계 검토</button>
+      <button class="nav" data-page="settings"><span>⚙</span>볼트 설정</button>
+    </nav>
+    <div class="history-header">최근 질문</div><div id="history" class="history"></div>
+    <div class="sidebar-bottom"><span class="status-dot"></span><span>내 컴퓨터에서 실행 중<small>원본 노트는 읽기 전용입니다</small></span></div>
+  </aside>
+  <main>
+    <header class="topbar"><div><span class="crumb">나의 지식 공간</span><span class="slash">/</span><span id="page-name">기록에 질문하기</span></div><span class="local-pill">● LOCAL WORKSPACE</span></header>
+    <div id="toast" class="toast" role="status" hidden></div>
+    <section id="page-ask" class="page">
+      <div class="intro"><div class="eyebrow"><span></span> FROM NOTES TO KNOWLEDGE</div><h1>기록은 쌓이고,<br>생각은 연결됩니다.</h1><p>업무의 맥락부터 투자의 판단까지.<br>내 노트에 질문하고, 답의 근거를 직접 확인하세요.</p></div>
+      <section id="onboarding" class="connect-card"><div class="step-badge">01</div><div><h2>먼저, 나의 볼트를 연결하세요</h2><p>Obsidian 노트가 담긴 로컬 폴더 경로를 입력하세요. iCloud 폴더도 연결할 수 있습니다.</p><form id="quick-connect" class="path-form"><input id="quick-path" aria-label="볼트 폴더 경로" placeholder="/Users/내이름/Documents/My Vault" required><button type="button" class="pick-folder" data-target="quick-path">Finder로 선택</button><button class="primary">볼트 연결 ↗</button></form><button id="demo" class="text-button">가상의 업무·투자 노트로 먼저 둘러보기 →</button></div></section>
+      <form id="question-form" class="question-card"><label for="question">기록에서 무엇을 찾고 싶으세요?</label><textarea id="question" rows="3" placeholder="프로젝트 B의 방향을 바꾼 이유는 무엇이었지?" maxlength="3000" required></textarea><div class="question-tools"><div class="filters"><select id="domain" aria-label="검색 영역"><option value="all">모든 기록</option><option value="work">회사 업무</option><option value="investment">투자 일지</option><option value="personal">개인 생각</option></select><details class="period"><summary>기간 선택</summary><div><label>기록 시작일<input id="start" type="date"></label><label>기록 종료일<input id="end" type="date"></label></div></details></div><button id="ask-button" class="primary">근거 찾기 <span>↗</span></button></div></form>
+      <div class="under-question"><span><i class="tiny-dot"></i><span id="model-mode">원문 근거로 답합니다</span></span><span>⌘ / Ctrl + Enter</span></div>
+      <details id="suggestions" open><summary id="scenario-title" class="section-label">예상 질문</summary><p id="scenario-info" class="hint" aria-live="polite">볼트 정보를 불러오는 중입니다.</p><div id="scenario-cards" class="suggestion-grid"></div></details>
+      <section id="answer" hidden></section>
+      <section class="vault-strip"><div class="vault-icon">▤</div><div class="vault-label"><strong id="vault-title">연결된 볼트가 없습니다</strong><span id="vault-caption">노트의 원문과 출처를 함께 보관합니다.</span></div><div class="vault-stat"><strong id="stat-notes">—</strong><span>색인된 노트</span></div><div class="vault-stat"><strong id="stat-links">—</strong><span>명시적 연결</span></div><span id="sync-badge" class="sync-badge">연결 대기</span></section>
+      <footer>내 기록, 내 맥락, 내 컴퓨터.<span>Obsi Onto / 0.1</span></footer>
+    </section>
+    <section id="page-library" class="page" hidden><div class="page-heading"><div><div class="eyebrow">INDEX HEALTH</div><h1>노트와 색인</h1><p>읽을 수 있는 현재 기록만 질문의 근거로 사용합니다.</p></div><div class="actions"><button id="scan">지금 갱신</button><button id="deep">정밀 검사</button></div></div><div id="scan-info" class="info-box"></div><div id="scan-errors"></div><div class="table-wrap"><table><thead><tr><th>노트</th><th>상태</th><th>버전</th><th>안내</th></tr></thead><tbody id="notes-table"></tbody></table></div><h2 class="subheading">확인이 필요한 링크</h2><div id="quality"></div></section>
+    <section id="page-graph" class="page" hidden><div class="eyebrow">EXPLORE CONNECTIONS</div><h1>지식 그래프</h1><p>노트에서 문단으로, 문단에서 생각의 근거로.</p><form id="graph-form" class="graph-search"><input id="graph-query" aria-label="그래프에서 이름이나 본문 찾기" placeholder="노트·주제 이름 또는 본문 단어 (예: A기업)" maxlength="200"><button class="primary">찾기 ↗</button><button id="graph-reset" type="button">현재 색인 새로고침</button></form><p class="hint">이름·본문에 포함된 글자를 찾습니다. 자연어 의미 검색은 ‘기록에 질문하기’를 이용하세요.</p><div id="vault-graph" aria-live="polite"></div></section>
+    <section id="page-review" class="page" hidden><div class="eyebrow">MEANING & PROVENANCE</div><h1>관계 검토</h1><p>모델이 제안한 관계는 확인하기 전까지 검색의 확정 관계에 포함하지 않습니다.</p><div id="candidates"></div></section>
+    <section id="page-settings" class="page" hidden><div class="eyebrow">LOCAL FIRST</div><h1>볼트 설정</h1><div class="settings-grid"><form id="settings-form" class="panel"><h2>노트가 있는 곳</h2><label for="vault-path">볼트 폴더 경로</label><div class="folder-path"><input id="vault-path" required placeholder="/Users/…/My Vault"><button type="button" class="pick-folder" data-target="vault-path">Finder로 선택</button></div><p class="hint">Finder에서 로컬 또는 iCloud Drive 폴더를 선택하거나 경로를 직접 입력하세요.</p><label>제외 폴더·패턴 <small>한 줄에 하나씩 입력</small><textarea id="excludes" rows="3" placeholder="Private&#10;Archive/**"></textarea></label><label class="checkbox"><input id="daily-dates" type="checkbox" checked>YYYY-MM-DD 노트 이름을 기록일로 사용</label><p class="hint">iCloud 볼트는 Finder에서 ‘다운로드 유지’를 권장합니다. 이 앱은 동기화 완료 여부를 판단하지 않습니다.</p><p class="hint">경로·제외 규칙·날짜 해석 설정이 바뀌면 색인 후 예상 질문을 다시 만듭니다. 질문 생성에 사용하는 노트 범위는 ‘모델과 데이터’에서 확인하세요.</p><button class="primary">연결 설정 저장</button></form><div class="panel"><h2>모델과 데이터</h2><div id="model-info"></div><button id="prepare-model">로컬 의미 검색 모델 준비</button><p class="hint">처음 한 번 공개 모델 파일을 다운로드합니다. 로컬 모델은 노트와 질문을 외부로 전송하지 않습니다.</p><div class="divider"></div><h3>생성 모델은 선택 사항입니다</h3><p class="hint">설정하지 않아도 원문 근거를 찾을 수 있습니다. 생성 모델과 외부 임베딩은 각각 환경변수로 설정합니다. 자세한 내용은 README를 확인하세요.</p><div class="divider"></div><h3>로컬 색인 삭제</h3><p class="hint">검색 색인·질문 기록·검토 결과를 삭제하고 볼트 연결을 해제합니다. 원본 노트와 공개 모델 파일은 보존합니다.</p><button id="delete-data" class="danger">로컬 색인과 기록 삭제</button></div><form id="tuning-form" class="panel"><h2>자동 갱신</h2><label>저장 안정화 대기 (초)<input id="debounce" type="number" min="0.5" max="30" step="0.5" value="2"></label><label>메타데이터 보완 대조 (분)<input id="interval" type="number" min="5" max="1440" value="30"></label><p class="hint">OS 변경 알림을 우선 사용합니다. 보완 대조는 본문을 읽지 않으며 질문·색인 작업 중에는 연기합니다.</p><button>갱신 설정 저장</button></form></div></section>
+  </main>
+</body>
+</html>

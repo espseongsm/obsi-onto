@@ -1,0 +1,468 @@
+{
+  "model": "sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2",
+  "model_fingerprint": "sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2:634d0f66c29dc934c8fa72b8a4fe91dd4d420a22f1d82a241058d4316e659a99:fastembed0.7.4:dim384:input-v1",
+  "fixture_notes": 5,
+  "questions": 20,
+  "metrics": {
+    "lexical": {
+      "hit_at_5": 1.0,
+      "mrr_at_5": 0.9416666666666667,
+      "strict_precision_at_5": 0.26250000000000007,
+      "source_verification": 1.0,
+      "mean_seconds": 0.0004999520984711126
+    },
+    "semantic": {
+      "hit_at_5": 1.0,
+      "mrr_at_5": 0.785,
+      "strict_precision_at_5": 0.20916666666666672,
+      "source_verification": 1.0,
+      "mean_seconds": 0.003296377247897908
+    },
+    "hybrid": {
+      "hit_at_5": 1.0,
+      "mrr_at_5": 0.645,
+      "strict_precision_at_5": 0.20000000000000004,
+      "source_verification": 1.0,
+      "mean_seconds": 0.032352841649844775
+    }
+  },
+  "initial_index": {
+    "body_reads": 10,
+    "embedding_calls": 34,
+    "files_checked": 5,
+    "seconds": 0.8188,
+    "cpu_seconds": 1.0099,
+    "disk_input_blocks": 0,
+    "total_seconds": 0.8307792910200078
+  },
+  "unchanged_scan": {
+    "body_reads": 0,
+    "embedding_calls": 0,
+    "files_checked": 5,
+    "seconds": 0.0009,
+    "cpu_seconds": 0.0006,
+    "disk_input_blocks": 0
+  },
+  "cases": [
+    {
+      "mode": "lexical",
+      "question": "고객이 결제 상태를 찾기 어렵다고 말한 기록",
+      "rank": 1,
+      "expected_path": "2026-09-21.md",
+      "warnings": []
+    },
+    {
+      "mode": "lexical",
+      "question": "프로젝트 B에서 대시보드를 뒤로 미룬 결정",
+      "rank": 1,
+      "expected_path": "2026-09-24.md",
+      "warnings": []
+    },
+    {
+      "mode": "lexical",
+      "question": "계약 상태 화면 초안을 작성한 기록",
+      "rank": 1,
+      "expected_path": "2026-09-24.md",
+      "warnings": []
+    },
+    {
+      "mode": "lexical",
+      "question": "결제 화면을 만들 예정이라고 한 계획",
+      "rank": 1,
+      "expected_path": "2026-09-21.md",
+      "warnings": []
+    },
+    {
+      "mode": "lexical",
+      "question": "내가 A기업을 긍정적으로 본 이유",
+      "rank": 3,
+      "expected_path": "2026-09-21.md",
+      "warnings": []
+    },
+    {
+      "mode": "lexical",
+      "question": "A기업 매수 판단을 보류한 이유",
+      "rank": 1,
+      "expected_path": "2026-09-24.md",
+      "warnings": []
+    },
+    {
+      "mode": "lexical",
+      "question": "주식 두 주를 판 가상 거래 기록",
+      "rank": 1,
+      "expected_path": "2026-09-24.md",
+      "warnings": []
+    },
+    {
+      "mode": "lexical",
+      "question": "매수 전에 확인해야 하는 투자 원칙",
+      "rank": 1,
+      "expected_path": "투자 원칙.md",
+      "warnings": []
+    },
+    {
+      "mode": "lexical",
+      "question": "좋은 이야기만으로 수익성을 가정하지 않는다는 원칙",
+      "rank": 1,
+      "expected_path": "투자 원칙.md",
+      "warnings": []
+    },
+    {
+      "mode": "lexical",
+      "question": "판단이 바뀌면 무엇을 기록하나",
+      "rank": 1,
+      "expected_path": "투자 원칙.md",
+      "warnings": []
+    },
+    {
+      "mode": "lexical",
+      "question": "다음 논의를 짧게 하기 위한 내 생각",
+      "rank": 1,
+      "expected_path": "2026-09-21.md",
+      "warnings": []
+    },
+    {
+      "mode": "lexical",
+      "question": "담당자 없이 해결한 문의 비율",
+      "rank": 1,
+      "expected_path": "프로젝트 B.md",
+      "warnings": []
+    },
+    {
+      "mode": "lexical",
+      "question": "고객 포털이라는 프로젝트의 목적",
+      "rank": 1,
+      "expected_path": "프로젝트 B.md",
+      "warnings": []
+    },
+    {
+      "mode": "lexical",
+      "question": "에이기업의 분석 기록은 어디에 연결되나",
+      "rank": 2,
+      "expected_path": "A기업.md",
+      "warnings": []
+    },
+    {
+      "mode": "lexical",
+      "question": "매수 검토가 실제 거래는 아니었던 기록",
+      "rank": 1,
+      "expected_path": "2026-09-21.md",
+      "warnings": []
+    },
+    {
+      "mode": "lexical",
+      "question": "고객 인터뷰를 근거로 계약 조회를 먼저 제공",
+      "rank": 1,
+      "expected_path": "2026-09-24.md",
+      "warnings": []
+    },
+    {
+      "mode": "lexical",
+      "question": "매출이 돈으로 들어오는지 확인하지 못한 판단",
+      "rank": 1,
+      "expected_path": "2026-09-24.md",
+      "warnings": []
+    },
+    {
+      "mode": "lexical",
+      "question": "만든 화면을 동료에게 검토 요청한 기록",
+      "rank": 1,
+      "expected_path": "2026-09-24.md",
+      "warnings": []
+    },
+    {
+      "mode": "lexical",
+      "question": "결정 이유를 문서로 남기려는 생각",
+      "rank": 1,
+      "expected_path": "2026-09-21.md",
+      "warnings": []
+    },
+    {
+      "mode": "lexical",
+      "question": "확인되지 않은 실적을 당시 가정이라고 표시한 기록",
+      "rank": 1,
+      "expected_path": "2026-09-21.md",
+      "warnings": []
+    },
+    {
+      "mode": "semantic",
+      "question": "고객이 결제 상태를 찾기 어렵다고 말한 기록",
+      "rank": 1,
+      "expected_path": "2026-09-21.md",
+      "warnings": []
+    },
+    {
+      "mode": "semantic",
+      "question": "프로젝트 B에서 대시보드를 뒤로 미룬 결정",
+      "rank": 5,
+      "expected_path": "2026-09-24.md",
+      "warnings": []
+    },
+    {
+      "mode": "semantic",
+      "question": "계약 상태 화면 초안을 작성한 기록",
+      "rank": 1,
+      "expected_path": "2026-09-24.md",
+      "warnings": []
+    },
+    {
+      "mode": "semantic",
+      "question": "결제 화면을 만들 예정이라고 한 계획",
+      "rank": 1,
+      "expected_path": "2026-09-21.md",
+      "warnings": []
+    },
+    {
+      "mode": "semantic",
+      "question": "내가 A기업을 긍정적으로 본 이유",
+      "rank": 3,
+      "expected_path": "2026-09-21.md",
+      "warnings": []
+    },
+    {
+      "mode": "semantic",
+      "question": "A기업 매수 판단을 보류한 이유",
+      "rank": 1,
+      "expected_path": "2026-09-24.md",
+      "warnings": []
+    },
+    {
+      "mode": "semantic",
+      "question": "주식 두 주를 판 가상 거래 기록",
+      "rank": 1,
+      "expected_path": "2026-09-24.md",
+      "warnings": []
+    },
+    {
+      "mode": "semantic",
+      "question": "매수 전에 확인해야 하는 투자 원칙",
+      "rank": 1,
+      "expected_path": "투자 원칙.md",
+      "warnings": []
+    },
+    {
+      "mode": "semantic",
+      "question": "좋은 이야기만으로 수익성을 가정하지 않는다는 원칙",
+      "rank": 1,
+      "expected_path": "투자 원칙.md",
+      "warnings": []
+    },
+    {
+      "mode": "semantic",
+      "question": "판단이 바뀌면 무엇을 기록하나",
+      "rank": 2,
+      "expected_path": "투자 원칙.md",
+      "warnings": []
+    },
+    {
+      "mode": "semantic",
+      "question": "다음 논의를 짧게 하기 위한 내 생각",
+      "rank": 1,
+      "expected_path": "2026-09-21.md",
+      "warnings": []
+    },
+    {
+      "mode": "semantic",
+      "question": "담당자 없이 해결한 문의 비율",
+      "rank": 1,
+      "expected_path": "프로젝트 B.md",
+      "warnings": []
+    },
+    {
+      "mode": "semantic",
+      "question": "고객 포털이라는 프로젝트의 목적",
+      "rank": 3,
+      "expected_path": "프로젝트 B.md",
+      "warnings": []
+    },
+    {
+      "mode": "semantic",
+      "question": "에이기업의 분석 기록은 어디에 연결되나",
+      "rank": 1,
+      "expected_path": "A기업.md",
+      "warnings": []
+    },
+    {
+      "mode": "semantic",
+      "question": "매수 검토가 실제 거래는 아니었던 기록",
+      "rank": 2,
+      "expected_path": "2026-09-21.md",
+      "warnings": []
+    },
+    {
+      "mode": "semantic",
+      "question": "고객 인터뷰를 근거로 계약 조회를 먼저 제공",
+      "rank": 3,
+      "expected_path": "2026-09-24.md",
+      "warnings": []
+    },
+    {
+      "mode": "semantic",
+      "question": "매출이 돈으로 들어오는지 확인하지 못한 판단",
+      "rank": 1,
+      "expected_path": "2026-09-24.md",
+      "warnings": []
+    },
+    {
+      "mode": "semantic",
+      "question": "만든 화면을 동료에게 검토 요청한 기록",
+      "rank": 2,
+      "expected_path": "2026-09-24.md",
+      "warnings": []
+    },
+    {
+      "mode": "semantic",
+      "question": "결정 이유를 문서로 남기려는 생각",
+      "rank": 1,
+      "expected_path": "2026-09-21.md",
+      "warnings": []
+    },
+    {
+      "mode": "semantic",
+      "question": "확인되지 않은 실적을 당시 가정이라고 표시한 기록",
+      "rank": 1,
+      "expected_path": "2026-09-21.md",
+      "warnings": []
+    },
+    {
+      "mode": "hybrid",
+      "question": "고객이 결제 상태를 찾기 어렵다고 말한 기록",
+      "rank": 1,
+      "expected_path": "2026-09-21.md",
+      "warnings": []
+    },
+    {
+      "mode": "hybrid",
+      "question": "프로젝트 B에서 대시보드를 뒤로 미룬 결정",
+      "rank": 5,
+      "expected_path": "2026-09-24.md",
+      "warnings": []
+    },
+    {
+      "mode": "hybrid",
+      "question": "계약 상태 화면 초안을 작성한 기록",
+      "rank": 3,
+      "expected_path": "2026-09-24.md",
+      "warnings": []
+    },
+    {
+      "mode": "hybrid",
+      "question": "결제 화면을 만들 예정이라고 한 계획",
+      "rank": 1,
+      "expected_path": "2026-09-21.md",
+      "warnings": []
+    },
+    {
+      "mode": "hybrid",
+      "question": "내가 A기업을 긍정적으로 본 이유",
+      "rank": 3,
+      "expected_path": "2026-09-21.md",
+      "warnings": []
+    },
+    {
+      "mode": "hybrid",
+      "question": "A기업 매수 판단을 보류한 이유",
+      "rank": 1,
+      "expected_path": "2026-09-24.md",
+      "warnings": []
+    },
+    {
+      "mode": "hybrid",
+      "question": "주식 두 주를 판 가상 거래 기록",
+      "rank": 3,
+      "expected_path": "2026-09-24.md",
+      "warnings": []
+    },
+    {
+      "mode": "hybrid",
+      "question": "매수 전에 확인해야 하는 투자 원칙",
+      "rank": 1,
+      "expected_path": "투자 원칙.md",
+      "warnings": []
+    },
+    {
+      "mode": "hybrid",
+      "question": "좋은 이야기만으로 수익성을 가정하지 않는다는 원칙",
+      "rank": 1,
+      "expected_path": "투자 원칙.md",
+      "warnings": []
+    },
+    {
+      "mode": "hybrid",
+      "question": "판단이 바뀌면 무엇을 기록하나",
+      "rank": 2,
+      "expected_path": "투자 원칙.md",
+      "warnings": []
+    },
+    {
+      "mode": "hybrid",
+      "question": "다음 논의를 짧게 하기 위한 내 생각",
+      "rank": 3,
+      "expected_path": "2026-09-21.md",
+      "warnings": []
+    },
+    {
+      "mode": "hybrid",
+      "question": "담당자 없이 해결한 문의 비율",
+      "rank": 1,
+      "expected_path": "프로젝트 B.md",
+      "warnings": []
+    },
+    {
+      "mode": "hybrid",
+      "question": "고객 포털이라는 프로젝트의 목적",
+      "rank": 3,
+      "expected_path": "프로젝트 B.md",
+      "warnings": []
+    },
+    {
+      "mode": "hybrid",
+      "question": "에이기업의 분석 기록은 어디에 연결되나",
+      "rank": 1,
+      "expected_path": "A기업.md",
+      "warnings": []
+    },
+    {
+      "mode": "hybrid",
+      "question": "매수 검토가 실제 거래는 아니었던 기록",
+      "rank": 2,
+      "expected_path": "2026-09-21.md",
+      "warnings": []
+    },
+    {
+      "mode": "hybrid",
+      "question": "고객 인터뷰를 근거로 계약 조회를 먼저 제공",
+      "rank": 3,
+      "expected_path": "2026-09-24.md",
+      "warnings": []
+    },
+    {
+      "mode": "hybrid",
+      "question": "매출이 돈으로 들어오는지 확인하지 못한 판단",
+      "rank": 1,
+      "expected_path": "2026-09-24.md",
+      "warnings": []
+    },
+    {
+      "mode": "hybrid",
+      "question": "만든 화면을 동료에게 검토 요청한 기록",
+      "rank": 5,
+      "expected_path": "2026-09-24.md",
+      "warnings": []
+    },
+    {
+      "mode": "hybrid",
+      "question": "결정 이유를 문서로 남기려는 생각",
+      "rank": 2,
+      "expected_path": "2026-09-21.md",
+      "warnings": []
+    },
+    {
+      "mode": "hybrid",
+      "question": "확인되지 않은 실적을 당시 가정이라고 표시한 기록",
+      "rank": 1,
+      "expected_path": "2026-09-21.md",
+      "warnings": []
+    }
+  ]
+}
