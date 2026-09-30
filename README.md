@@ -56,6 +56,8 @@ flowchart LR
 
 While the implementation PRs are under review, clone the latest development preview branch:
 
+Review the [current preview PR #2](https://github.com/espseongsm/obsi-onto/pull/2), stacked on the [initial MVP PR #1](https://github.com/espseongsm/obsi-onto/pull/1).
+
 ```sh
 git clone --branch codex/initial-preview https://github.com/espseongsm/obsi-onto.git
 cd obsi-onto
