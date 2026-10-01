@@ -1,0 +1,11 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "obsi-onto",
+      "runtimeExecutable": "env",
+      "runtimeArgs": ["BROWSER=true", "uv", "run", "main.py"],
+      "port": 8765
+    }
+  ]
+}
