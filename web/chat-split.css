@@ -1,0 +1,23 @@
+/* A quiet, reachable handle stays beside both panels as the conversation scrolls. */
+#chat-splitter{display:none}
+.ask-main{container:chat-pane / inline-size}
+.dock-actions{display:flex;align-items:center;gap:6px;flex-shrink:0}
+#split-reset{color:var(--graph-muted);background:transparent}
+#split-reset:disabled{cursor:default;opacity:.45}
+@media(min-width:1101px){
+  .graph-dock #chat-splitter{position:sticky;top:97px;display:flex;align-items:center;justify-content:center;height:calc(100dvh - 121px);min-height:600px;cursor:col-resize;touch-action:none;user-select:none;z-index:7;border-radius:8px;outline-offset:-2px}
+  #chat-splitter:before{content:'';position:absolute;width:1px;inset:16px auto;background:var(--line);opacity:.55;transition:background .15s,opacity .15s}
+  .split-grip{position:relative;display:grid;place-items:center;width:16px;height:44px;border:1px solid var(--line);border-radius:9px;background:var(--bg);transition:background .15s,border-color .15s}
+  .split-grip:after{content:'';width:5px;height:16px;border-inline:1px solid var(--muted)}
+  #chat-splitter:is(:hover,:focus-visible),.resizing-split #chat-splitter{outline:2px solid transparent}
+  #chat-splitter:is(:hover,:focus-visible):before,.resizing-split #chat-splitter:before{background:var(--green);opacity:1}
+  #chat-splitter:is(:hover,:focus-visible) .split-grip,.resizing-split .split-grip{background:var(--accent-soft);border-color:var(--green)}
+  #chat-splitter:focus-visible .split-grip{outline:2px solid var(--green);outline-offset:3px}
+  #split-readout{position:absolute;top:calc(50% - 58px);left:50%;transform:translateX(-50%);padding:8px 11px;border:1px solid var(--line);border-radius:8px;background:var(--paper);color:var(--ink);box-shadow:0 5px 18px var(--shadow);font-size:10px;font-variant-numeric:tabular-nums;white-space:nowrap;pointer-events:none;opacity:0;transition:opacity .15s}
+  #chat-splitter:is(:hover,:focus-visible) #split-readout,.resizing-split #split-readout{opacity:1}
+  body.resizing-split,body.resizing-split *{cursor:col-resize!important;user-select:none!important}
+  .resizing-split .graph-label{pointer-events:none}
+}
+@media(max-width:1100px){#split-reset{display:none}}
+@container chat-pane (max-width:320px){.ask-main .source-tile-grid{grid-template-columns:1fr}}
+@media(prefers-reduced-motion:reduce){#chat-splitter:before,.split-grip,#split-readout{transition:none}}

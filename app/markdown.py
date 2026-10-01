@@ -6,16 +6,20 @@ from datetime import date
 from pathlib import PurePosixPath
 from urllib.parse import unquote, urlsplit
 
-import yaml
+from app.frontmatter import load_metadata
 
-WIKI = re.compile(r"!?\[\[([^\]]+)\]\]")
-MD_LINK = re.compile(r"!?\[[^\]]*\]\(([^\s)]+)(?:\s+[^)]*)?\)")
+WIKI = re.compile(r"!?\[\[([^\[\]\n]{1,2048})\]\]")
+MD_LINK = re.compile(r"!?\[[^\[\]\n]{0,2048}\]\(([^\s)]{1,2048})(?:[ \t]+[^)\n]{0,1024})?\)")
 TAGS = re.compile(r"(?<![\w/#])#([\w\-/]+)")
 DOMAINS = {
     "work": ("업무", "회의", "프로젝트"),
     "investment": ("투자", "매수", "매도", "주식", "기업", "ETF"),
     "personal": ("개인", "일상", "생각", "원칙"),
 }
+
+
+def searchable_body(text):
+    return not (text.startswith("---\n") or re.fullmatch(r"(?:\s*#{1,6}\s+[^\n]+\n?)+", text))
 
 
 def digest(text):
@@ -70,17 +74,14 @@ def links_in(text, start_line):
 
 def parse_markdown(text, path, daily_pattern=r"^\d{4}-\d{2}-\d{2}$"):
     lines = text.splitlines()
+    if any(len(line) > 16_384 for line in lines):
+        raise ValueError("Each line in a note must be no longer than 16,384 characters.")
     metadata, offset = {}, 0
     if lines and lines[0].strip() == "---":
         end = next((i for i in range(1, len(lines)) if lines[i].strip() == "---"), None)
         if end is None:
-            raise ValueError("frontmatter의 닫는 ---가 없습니다.")
-        try:
-            metadata = yaml.safe_load("\n".join(lines[1:end])) or {}
-        except yaml.YAMLError as exc:
-            raise ValueError("frontmatter YAML 형식을 확인하세요.") from exc
-        if not isinstance(metadata, dict):
-            raise ValueError("frontmatter는 속성 객체여야 합니다.")
+            raise ValueError("Frontmatter is missing its closing --- delimiter.")
+        metadata = load_metadata("\n".join(lines[1:end]))
         offset = end + 1
     title = str(metadata.get("title") or PurePosixPath(path).stem)
     aliases = strings(metadata.get("aliases", metadata.get("alias")))

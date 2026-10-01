@@ -44,14 +44,17 @@ def test_failed_picker_releases_dialog_lock(monkeypatch, timeout):
         return subprocess.CompletedProcess(command, 1, "", "picker unavailable")
 
     monkeypatch.setattr(folder_picker.subprocess, "run", run)
-    with pytest.raises(ValueError, match="폴더 선택"):
+    with pytest.raises(ValueError, match="[Ff]older selection"):
         folder_picker.choose_vault_folder()
     assert not folder_picker._dialog_lock.locked()
 
 
 def test_duplicate_dialog_is_rejected(monkeypatch):
     monkeypatch.setattr(folder_picker.sys, "platform", "darwin")
-    with folder_picker._dialog_lock, pytest.raises(ValueError, match="이미 폴더 선택 창"):
+    with (
+        folder_picker._dialog_lock,
+        pytest.raises(ValueError, match="folder selection window is already open"),
+    ):
         folder_picker.choose_vault_folder()
 
 

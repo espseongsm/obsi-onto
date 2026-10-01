@@ -1,0 +1,70 @@
+/* Shared tokens color every surface, including the WebGL graph palette. */
+:root,[data-theme="light"]{
+  color-scheme:light;
+  --bg:#f7f9fd;--paper:#fff;--ink:#23354e;--muted:#61718b;--line:#dce5f2;
+  --green:#3263ac;--accent:#dce9fc;--accent-soft:#e8f0fe;--accent-contrast:#fff;--focus:#bd782c;
+  --surface-soft:#eff4fc;--surface-raised:#fff;--sidebar-bg:#edf2fa;--hover:#e6eefb;--chat-user:#e0ebfd;
+  --shadow:#16345b18;--shadow-strong:#16345b2c;--placeholder:#7a8ba6;--danger:#a94840;--danger-bg:#fbedeb;
+  --warning:#91631f;--warning-bg:#fbf3e4;--purple:#806696;--purple-bg:#eeeaf5;--toast-bg:#264978;--toast-ink:#f4f8ff;
+  --category-ai:#7343c7;--category-data:#007e94;--category-engineering:#1b5bd6;--category-work:#c05f0b;--category-investing:#977000;
+  --category-economy:#c9374d;--category-life:#238b57;--category-knowledge:#af399d;--category-journal:#876747;--category-other:#66768b;
+  --node-note:#175cdc;--node-section:#008d9d;--node-topic:#a96900;--node-tag:#853bce;--node-claim:#c52e66;--node-activity:#ce5514;
+  --graph-bg:#eef4fd;--graph-ink:#284467;--graph-muted:#596f91;--graph-line:#365c8e26;
+  --graph-panel:#f8fbfff5;--graph-toolbar:#f8fbffeb;--graph-control:#dce8f8;--graph-control-hover:#ccdff5;
+  --graph-label-bg:#f4f8ffcc;--graph-label-picked-bg:#faecd4;--graph-label-border:#7c99be;
+  --graph-edge:#6a8cb8;--graph-edge-strong:#3d70ae;--graph-focus-color:#986021;--graph-match-color:#245fad;--graph-conflict-color:#b2631e;
+  --graph-glow-a:#a9cafd55;--graph-glow-b:#ccd5f54a;--graph-vignette:#eef4fd65;
+  --graph-select-bg:#ddeafb;--graph-quote-bg:#e6eefb;--graph-shadow:#16345b1b;
+}
+[data-theme="dark"]{
+  color-scheme:dark;
+  --bg:#09090b;--paper:#151517;--ink:#f3f3f5;--muted:#aaabb2;--line:#2c2c31;
+  --green:#96bfff;--accent:#252c3a;--accent-soft:#1e232e;--accent-contrast:#111823;--focus:#e5c18c;
+  --surface-soft:#1b1b1f;--surface-raised:#222226;--sidebar-bg:#101012;--hover:#27272d;--chat-user:#22252d;
+  --shadow:#00000030;--shadow-strong:#00000080;--placeholder:#888890;--danger:#f4a09a;--danger-bg:#352326;
+  --warning:#e8c189;--warning-bg:#302a21;--purple:#c1ace4;--purple-bg:#292530;--toast-bg:#e1e3e9;--toast-ink:#19191e;
+  --category-ai:#a77dff;--category-data:#0acfe5;--category-engineering:#4f91ff;--category-work:#ff963e;--category-investing:#eccc42;
+  --category-economy:#ff6578;--category-life:#5ecb90;--category-knowledge:#e176d8;--category-journal:#cea277;--category-other:#9cabc3;
+  --node-note:#3c83ff;--node-section:#00cbe6;--node-topic:#ffd13b;--node-tag:#b35dff;--node-claim:#ff528c;--node-activity:#ff842e;
+  --graph-bg:#09090c;--graph-ink:#ececf1;--graph-muted:#a6a6b3;--graph-line:#ffffff1a;
+  --graph-panel:#18181df5;--graph-toolbar:#1a1a20eb;--graph-control:#272730;--graph-control-hover:#33333e;
+  --graph-label-bg:#111116e3;--graph-label-picked-bg:#2e261d;--graph-label-border:#73737f;
+  --graph-edge:#747489;--graph-edge-strong:#a8b1ca;--graph-focus-color:#e5c18c;--graph-match-color:#9ebef2;--graph-conflict-color:#efb879;
+  --graph-glow-a:#a0a0ac08;--graph-glow-b:#80808f07;--graph-vignette:#09090c95;
+  --graph-select-bg:#2a2b38;--graph-quote-bg:#101014;--graph-shadow:#00000045;
+}
+[data-theme="ai"]{
+  color-scheme:dark;
+  --bg:#081224;--paper:#0f203b;--ink:#e4edff;--muted:#9cb3d8;--line:#294469;
+  --green:#9cc5ff;--accent:#294d7d;--accent-soft:#1b365b;--accent-contrast:#0d2443;--focus:#edc086;
+  --surface-soft:#132846;--surface-raised:#183557;--sidebar-bg:#0b192d;--hover:#20436a;--chat-user:#1c3d65;
+  --shadow:#00000028;--shadow-strong:#00000066;--placeholder:#829ec5;--danger:#f3aaa1;--danger-bg:#402b29;
+  --warning:#ecc18a;--warning-bg:#382f24;--purple:#c7b5e9;--purple-bg:#302b3e;--toast-bg:#afceff;--toast-ink:#142e54;
+  --category-ai:#b38aff;--category-data:#13d9ed;--category-engineering:#559cff;--category-work:#ffa64c;--category-investing:#f5d94f;
+  --category-economy:#ff7485;--category-life:#6cdaa2;--category-knowledge:#eb87df;--category-journal:#dcaf82;--category-other:#a6b4ca;
+  --node-note:#438dff;--node-section:#00d7ed;--node-topic:#ffd949;--node-tag:#bd69ff;--node-claim:#ff659e;--node-activity:#ff963d;
+  --graph-bg:#071528;--graph-ink:#e1eeff;--graph-muted:#9bb6dc;--graph-line:#bfd8ff26;
+  --graph-panel:#102744f5;--graph-toolbar:#142b49eb;--graph-control:#223f65;--graph-control-hover:#305684;
+  --graph-label-bg:#0a1934cc;--graph-label-picked-bg:#33291df0;--graph-label-border:#6288bb;
+  --graph-edge:#597fb7;--graph-edge-strong:#91bbf4;--graph-focus-color:#ffd39a;--graph-match-color:#96d1ff;--graph-conflict-color:#efb878;
+  --graph-glow-a:#154a9d60;--graph-glow-b:#27428145;--graph-vignette:#07152875;
+  --graph-select-bg:#244773;--graph-quote-bg:#081b35aa;--graph-shadow:#00000045;
+}
+:root{--orange:var(--warning)}
+body{background:var(--bg);color:var(--ink)}
+[data-theme="ai"] body{background:radial-gradient(ellipse at 100% 0%,#2457a522,transparent 50%),var(--bg)}
+::selection{background:var(--accent);color:var(--ink)}
+:focus-visible{outline:2px solid var(--green)}
+button,input,textarea,select{color-scheme:inherit}
+.topbar{position:sticky;top:0;z-index:10;background:var(--bg)}
+@media(min-width:1101px){#chat-graph-panel{top:97px}}
+.topbar-actions{display:flex;gap:18px;align-items:center;flex-shrink:0}
+.theme-switch{display:flex;gap:3px;padding:4px;border:1px solid var(--line);border-radius:24px;background:var(--surface-soft)}
+.theme-switch button{display:flex;align-items:center;gap:6px;min-height:30px;padding:6px 12px;border:0;border-radius:18px;background:transparent;color:var(--muted);font-size:11px;font-weight:550}
+.theme-switch button:hover{color:var(--ink);background:var(--hover)}
+.theme-switch button[aria-pressed=true]{background:var(--paper);color:var(--green);box-shadow:0 2px 7px var(--shadow)}
+.theme-switch button span{font-size:14px;line-height:1}
+[data-theme="ai"] .theme-switch button[aria-pressed=true]{background:linear-gradient(120deg,#214b80,#193e65);color:#cce8ff}
+.breadcrumbs{min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+@media(max-width:1250px){.topbar-actions .local-pill{display:none}}
+@media(max-width:760px){.topbar{gap:12px;padding-inline:16px}.breadcrumbs .crumb,.breadcrumbs .slash{display:none}.theme-switch{gap:1px;padding:3px}.theme-switch button{font-size:10px;padding:5px 9px;min-height:30px}.theme-switch button span{font-size:12px}.topbar-actions{gap:0}}

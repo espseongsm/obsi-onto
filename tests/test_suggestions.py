@@ -41,6 +41,7 @@ def test_vault_changes_regenerate_after_indexing_but_tuning_and_same_settings_do
     monkeypatch.setattr(service.generator, "request", request)
     with TestClient(create_app(service.config, service)) as client:
         headers = {"x-obsi-token": client.get("/api/session").json()["token"]}
+        client.headers.update(headers)
         wait_until(lambda: service.store.get("suggestions", {}).get("state") == "ready")
         original = client.get("/api/status").json()["suggestions"]
         assert len(original["items"]) == 2 and len(calls) == 1
@@ -118,7 +119,7 @@ def test_model_sample_is_bounded_diverse_excludes_private_and_cache_is_reused(se
     cached = service.store.get("suggestions")
     assert cached["state"] == "ready" and len(cached["items"]) == 6
     assert "text" not in cached["items"][0]["sources"][0]
-    Suggestions(service.store, service.search, service.generator).refresh()
+    Suggestions(service.store, service.search, service.generator, service.operation).refresh()
     assert len(calls) == 1 and service.store.get("suggestions") == cached
 
 

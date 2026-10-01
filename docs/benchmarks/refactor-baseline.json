@@ -1,0 +1,276 @@
+{
+  "date": "2026-09-28",
+  "python": "3.12.11",
+  "platform": "macOS-27.0-arm64-arm-64bit",
+  "clock": "perf_counter wall-clock milliseconds",
+  "method": "100/500/1000 synthetic notes; one forward anchored link and one of 20 topics per note; 384D FakeEmbedder; no watcher/server/ONNX/LLM; three sequential warm repetitions except cold index and single-note update; cProfile runs separately, excluded from timings",
+  "results": [
+    {
+      "notes": 100,
+      "initial_index": {
+        "median_ms": 236.579,
+        "samples_ms": [
+          236.579
+        ]
+      },
+      "sections": 400,
+      "unchanged_scan": {
+        "median_ms": 2.276,
+        "samples_ms": [
+          2.373,
+          2.242,
+          2.276
+        ]
+      },
+      "unchanged_metrics": {
+        "body_reads": 0,
+        "embedding_calls": 0,
+        "files_checked": 100,
+        "seconds": 0.0023,
+        "cpu_seconds": 0.0022,
+        "disk_input_blocks": 0
+      },
+      "rdf_rebuild_shacl": {
+        "median_ms": 59.74,
+        "samples_ms": [
+          62.095,
+          59.74,
+          59.364
+        ]
+      },
+      "triples": 4070,
+      "warm_graph_view": {
+        "median_ms": 6.864,
+        "samples_ms": [
+          19.032,
+          6.864,
+          6.768
+        ]
+      },
+      "retrieve_lexical": {
+        "median_ms": 2.209,
+        "samples_ms": [
+          2.433,
+          2.209,
+          2.193
+        ]
+      },
+      "retrieve_semantic": {
+        "median_ms": 4.012,
+        "samples_ms": [
+          5.395,
+          4.012,
+          3.978
+        ]
+      },
+      "retrieve_hybrid": {
+        "median_ms": 34.046,
+        "samples_ms": [
+          41.169,
+          34.046,
+          33.445
+        ]
+      },
+      "ask_no_llm": {
+        "median_ms": 42.205,
+        "samples_ms": [
+          40.376,
+          42.205,
+          42.304
+        ]
+      },
+      "one_note_index": {
+        "median_ms": 8.382,
+        "samples_ms": [
+          8.382
+        ]
+      },
+      "one_note_rdf_refresh": {
+        "median_ms": 74.596,
+        "samples_ms": [
+          74.596
+        ]
+      },
+      "rdf_profile": "         993273 function calls (990524 primitive calls) in 0.202 seconds\n\n   Ordered by: cumulative time\n   List reduced from 389 to 12 due to restriction <12>\n\n   ncalls  tottime  percall  cumtime  percall filename:lineno(function)\n        1    0.000    0.000    0.202    0.202 obsi-refactor-benchmark.py:59(rebuild)\n        1    0.003    0.003    0.202    0.202 ontology.py:95(refresh)\n        1    0.000    0.000    0.147    0.147 entrypoints.py:33(validate)\n        1    0.000    0.000    0.144    0.144 validator.py:193(run)\n  2322/17    0.012    0.000    0.143    0.008 shape.py:621(validate)\n        2    0.000    0.000    0.142    0.071 shape_based_constraints.py:76(evaluate)\n        8    0.002    0.000    0.142    0.018 shape_based_constraints.py:108(_evaluate_property_shape)\n    19662    0.008    0.000    0.050    0.000 graph.py:2324(triples)\n     7226    0.006    0.000    0.046    0.000 shape.py:724(<genexpr>)\n    15853    0.004    0.000    0.046    0.000 graph.py:987(objects)\n    25986    0.013    0.000    0.039    0.000 memory.py:411(triples)\n     4382    0.001    0.000    0.032    0.000 graph.py:617(add)\n\n\n",
+      "retrieval_profile": "         416512 function calls (347167 primitive calls) in 0.082 seconds\n\n   Ordered by: cumulative time\n   List reduced from 347 to 12 due to restriction <12>\n\n   ncalls  tottime  percall  cumtime  percall filename:lineno(function)\n        1    0.000    0.000    0.082    0.082 search.py:129(retrieve)\n        1    0.000    0.000    0.077    0.077 ontology.py:193(neighbors)\n        5    0.000    0.000    0.057    0.011 graph.py:1675(query)\n        5    0.000    0.000    0.057    0.011 processor.py:116(query)\n        5    0.000    0.000    0.046    0.009 parser.py:1549(parseQuery)\n        5    0.000    0.000    0.046    0.009 core.py:1274(parse_string)\n 30255/15    0.015    0.000    0.046    0.003 core.py:916(_parseNoCache)\n  8835/20    0.002    0.000    0.046    0.002 core.py:4609(parseImpl)\n 10070/25    0.004    0.000    0.046    0.002 core.py:5150(parseImpl)\n  1155/15    0.001    0.000    0.046    0.003 core.py:4868(parseImpl)\n    320/5    0.000    0.000    0.044    0.009 core.py:6250(parseImpl)\n   330/40    0.000    0.000    0.042    0.001 core.py:5671(parseImpl)\n\n\n"
+    },
+    {
+      "notes": 500,
+      "initial_index": {
+        "median_ms": 993.511,
+        "samples_ms": [
+          993.511
+        ]
+      },
+      "sections": 2000,
+      "unchanged_scan": {
+        "median_ms": 12.311,
+        "samples_ms": [
+          12.747,
+          12.311,
+          12.309
+        ]
+      },
+      "unchanged_metrics": {
+        "body_reads": 0,
+        "embedding_calls": 0,
+        "files_checked": 500,
+        "seconds": 0.0122,
+        "cpu_seconds": 0.0121,
+        "disk_input_blocks": 0
+      },
+      "rdf_rebuild_shacl": {
+        "median_ms": 343.197,
+        "samples_ms": [
+          351.306,
+          331.843,
+          343.197
+        ]
+      },
+      "triples": 20070,
+      "warm_graph_view": {
+        "median_ms": 35.616,
+        "samples_ms": [
+          35.616,
+          63.441,
+          34.829
+        ]
+      },
+      "retrieve_lexical": {
+        "median_ms": 10.075,
+        "samples_ms": [
+          10.137,
+          10.075,
+          9.423
+        ]
+      },
+      "retrieve_semantic": {
+        "median_ms": 25.413,
+        "samples_ms": [
+          24.991,
+          25.612,
+          25.413
+        ]
+      },
+      "retrieve_hybrid": {
+        "median_ms": 77.026,
+        "samples_ms": [
+          76.216,
+          77.11,
+          77.026
+        ]
+      },
+      "ask_no_llm": {
+        "median_ms": 98.621,
+        "samples_ms": [
+          102.318,
+          98.013,
+          98.621
+        ]
+      },
+      "one_note_index": {
+        "median_ms": 33.6,
+        "samples_ms": [
+          33.6
+        ]
+      },
+      "one_note_rdf_refresh": {
+        "median_ms": 340.88,
+        "samples_ms": [
+          340.88
+        ]
+      },
+      "rdf_profile": "         4872873 function calls (4860924 primitive calls) in 1.038 seconds\n\n   Ordered by: cumulative time\n   List reduced from 389 to 12 due to restriction <12>\n\n   ncalls  tottime  percall  cumtime  percall filename:lineno(function)\n        1    0.000    0.000    1.038    1.038 obsi-refactor-benchmark.py:59(rebuild)\n        1    0.013    0.013    1.038    1.038 ontology.py:95(refresh)\n        1    0.000    0.000    0.715    0.715 entrypoints.py:33(validate)\n        1    0.000    0.000    0.713    0.713 validator.py:193(run)\n 11522/17    0.061    0.000    0.712    0.042 shape.py:621(validate)\n        2    0.000    0.000    0.708    0.354 shape_based_constraints.py:76(evaluate)\n        8    0.008    0.001    0.708    0.088 shape_based_constraints.py:108(_evaluate_property_shape)\n    96862    0.041    0.000    0.246    0.000 graph.py:2324(triples)\n    36026    0.030    0.000    0.233    0.000 shape.py:724(<genexpr>)\n    78253    0.019    0.000    0.228    0.000 graph.py:987(objects)\n    21582    0.007    0.000    0.201    0.000 graph.py:617(add)\n   128386    0.066    0.000    0.196    0.000 memory.py:411(triples)\n\n\n",
+      "retrieval_profile": "         948912 function calls (861567 primitive calls) in 0.179 seconds\n\n   Ordered by: cumulative time\n   List reduced from 347 to 12 due to restriction <12>\n\n   ncalls  tottime  percall  cumtime  percall filename:lineno(function)\n        1    0.000    0.000    0.179    0.179 search.py:129(retrieve)\n        1    0.000    0.000    0.152    0.152 ontology.py:193(neighbors)\n       10    0.000    0.000    0.095    0.009 query.py:358(__iter__)\n       10    0.000    0.000    0.094    0.009 evaluate.py:559(evalDistinct)\n    75/10    0.000    0.000    0.083    0.008 evaluate.py:277(evalPart)\n        5    0.000    0.000    0.083    0.017 evaluate.py:571(evalProject)\n     10/5    0.000    0.000    0.083    0.017 evaluate.py:156(evalJoin)\n     15/5    0.001    0.000    0.071    0.014 evaluate.py:168(evalUnion)\n     2505    0.003    0.000    0.069    0.000 evaluate.py:124(evalExtend)\n        5    0.000    0.000    0.057    0.011 graph.py:1675(query)\n        5    0.000    0.000    0.057    0.011 processor.py:116(query)\n        5    0.000    0.000    0.047    0.009 parser.py:1549(parseQuery)\n\n\n"
+    },
+    {
+      "notes": 1000,
+      "initial_index": {
+        "median_ms": 2130.753,
+        "samples_ms": [
+          2130.753
+        ]
+      },
+      "sections": 4000,
+      "unchanged_scan": {
+        "median_ms": 24.094,
+        "samples_ms": [
+          24.094,
+          23.987,
+          24.582
+        ]
+      },
+      "unchanged_metrics": {
+        "body_reads": 0,
+        "embedding_calls": 0,
+        "files_checked": 1000,
+        "seconds": 0.0244,
+        "cpu_seconds": 0.0242,
+        "disk_input_blocks": 0
+      },
+      "rdf_rebuild_shacl": {
+        "median_ms": 742.818,
+        "samples_ms": [
+          768.44,
+          710.146,
+          742.818
+        ]
+      },
+      "triples": 40070,
+      "warm_graph_view": {
+        "median_ms": 74.518,
+        "samples_ms": [
+          79.201,
+          74.518,
+          73.218
+        ]
+      },
+      "retrieve_lexical": {
+        "median_ms": 20.317,
+        "samples_ms": [
+          20.058,
+          20.317,
+          20.427
+        ]
+      },
+      "retrieve_semantic": {
+        "median_ms": 54.526,
+        "samples_ms": [
+          52.811,
+          54.526,
+          56.789
+        ]
+      },
+      "retrieve_hybrid": {
+        "median_ms": 131.287,
+        "samples_ms": [
+          191.647,
+          130.82,
+          131.287
+        ]
+      },
+      "ask_no_llm": {
+        "median_ms": 165.18,
+        "samples_ms": [
+          168.855,
+          162.963,
+          165.18
+        ]
+      },
+      "one_note_index": {
+        "median_ms": 96.883,
+        "samples_ms": [
+          96.883
+        ]
+      },
+      "one_note_rdf_refresh": {
+        "median_ms": 756.277,
+        "samples_ms": [
+          756.277
+        ]
+      },
+      "rdf_profile": "         9722373 function calls (9698924 primitive calls) in 2.159 seconds\n\n   Ordered by: cumulative time\n   List reduced from 389 to 12 due to restriction <12>\n\n   ncalls  tottime  percall  cumtime  percall filename:lineno(function)\n        1    0.001    0.001    2.159    2.159 obsi-refactor-benchmark.py:59(rebuild)\n        1    0.026    0.026    2.159    2.159 ontology.py:95(refresh)\n        1    0.000    0.000    1.453    1.453 entrypoints.py:33(validate)\n        1    0.000    0.000    1.450    1.450 validator.py:193(run)\n 23022/17    0.127    0.000    1.449    0.085 shape.py:621(validate)\n        2    0.000    0.000    1.441    0.721 shape_based_constraints.py:76(evaluate)\n        8    0.017    0.002    1.441    0.180 shape_based_constraints.py:108(_evaluate_property_shape)\n   193362    0.083    0.000    0.495    0.000 graph.py:2324(triples)\n    72026    0.062    0.000    0.468    0.000 shape.py:724(<genexpr>)\n   156253    0.038    0.000    0.465    0.000 graph.py:987(objects)\n    43082    0.014    0.000    0.438    0.000 graph.py:617(add)\n   256386    0.138    0.000    0.399    0.000 memory.py:411(triples)\n\n\n",
+      "retrieval_profile": "         1614412 function calls (1504567 primitive calls) in 0.306 seconds\n\n   Ordered by: cumulative time\n   List reduced from 347 to 12 due to restriction <12>\n\n   ncalls  tottime  percall  cumtime  percall filename:lineno(function)\n        1    0.001    0.001    0.306    0.306 search.py:129(retrieve)\n        1    0.000    0.000    0.255    0.255 ontology.py:193(neighbors)\n       10    0.000    0.000    0.191    0.019 query.py:358(__iter__)\n       10    0.000    0.000    0.191    0.019 evaluate.py:559(evalDistinct)\n    75/10    0.000    0.000    0.168    0.017 evaluate.py:277(evalPart)\n        5    0.000    0.000    0.168    0.034 evaluate.py:571(evalProject)\n     10/5    0.000    0.000    0.168    0.034 evaluate.py:156(evalJoin)\n     15/5    0.001    0.000    0.143    0.029 evaluate.py:168(evalUnion)\n     5005    0.005    0.000    0.140    0.000 evaluate.py:124(evalExtend)\n        5    0.000    0.000    0.064    0.013 graph.py:1675(query)\n        5    0.000    0.000    0.063    0.013 processor.py:116(query)\n15040/5030    0.005    0.000    0.062    0.000 evaluate.py:77(evalBGP)\n\n\n"
+    }
+  ]
+}

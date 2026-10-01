@@ -1,0 +1,2 @@
+# Preserve upstream shader template whitespace in the generated Three.js bundle.
+web/vendor/three-graph.min.js whitespace=-blank-at-eol

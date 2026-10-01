@@ -3,6 +3,7 @@
 import sys
 import threading
 import time
+import uuid
 from pathlib import Path
 
 from watchdog.events import FileSystemEventHandler
@@ -13,6 +14,7 @@ from app.indexer import Indexer
 from app.markdown import digest
 from app.models import Embedder, Generator
 from app.ontology import Ontology
+from app.query_jobs import QueryJobs
 from app.search import Search
 from app.storage import Store
 from app.suggestions import Suggestions
@@ -74,7 +76,7 @@ class Service:
     def __init__(self, config, embedder=None):
         self.config = config
         config.validate_storage()
-        config.data_dir.mkdir(parents=True, exist_ok=True)
+        config.data_dir.mkdir(parents=True, exist_ok=True, mode=0o700)
         self.store = Store(config.data_dir / "index.sqlite3", config.embedding_dim)
         if self.store.get("index_format") != 1:
             with self.store.transaction() as db:
@@ -85,9 +87,12 @@ class Service:
         self.indexer = Indexer(self.store, self.embedder, config)
         self.ontology = Ontology(self.store)
         self.search = Search(self.store, self.embedder, self.ontology, self.generator, self.indexer)
-        self.suggestions = Suggestions(self.store, self.search, self.generator)
         self.condition = threading.Condition()
         self.operation = threading.RLock()
+        self.suggestions = Suggestions(self.store, self.search, self.generator, self.operation)
+        self.suggestion_future = None
+        self.jobs = QueryJobs(self)
+        self.search.jobs = self.jobs
         self.pending, self.scan_due, self.deep = {}, None, False
         self.prepare_model = False
         self.stopping = False
@@ -126,12 +131,12 @@ class Service:
     def register(self, path, excludes, daily_pattern):
         root = Path(path).expanduser().resolve()
         if not root.is_dir():
-            raise ValueError("존재하는 볼트 폴더 경로를 입력하세요.")
+            raise ValueError("Enter the path to an existing vault folder.")
         self.config.validate_storage(root)
         if self.indexer.root and self.indexer.root != root:
-            raise ValueError("다른 볼트를 연결하려면 기존 로컬 색인을 먼저 삭제하세요.")
+            raise ValueError("Delete the current local index before connecting a different vault.")
         if any(Path(rule).is_absolute() or ".." in Path(rule).parts for rule in excludes):
-            raise ValueError("제외 경로는 볼트 안의 상대 경로 또는 패턴이어야 합니다.")
+            raise ValueError("Excluded paths must be relative paths or patterns inside the vault.")
         with self.operation:
             previous_pattern = self.store.get("daily_pattern", r"^\d{4}-\d{2}-\d{2}$")
             changed = (
@@ -147,6 +152,8 @@ class Service:
             self.store.put("daily_pattern", daily_pattern)
             if changed or not self.store.get("suggestions"):
                 self.suggestions.reset()
+            if changed:
+                self.jobs.invalidate()
             self.indexer.invalidate()
             self.watch()
             self.request_scan()
@@ -169,7 +176,7 @@ class Service:
                     self.scan_due = current
                 last_wall = wall
                 if self.observer and not all(e.is_alive() for e in self.observer.emitters):
-                    self.error = "파일 변경 감시가 중단되었습니다. 메타데이터를 다시 확인합니다."
+                    self.error = "File watching stopped. File metadata will be checked again."
                     self.scan_due = current
                     self.watch()
                 periodic = current - self.last_reconcile >= self.config.reconcile_seconds
@@ -187,7 +194,7 @@ class Service:
                         deadlines.append(max(0.01, self.scan_due - current))
                     self.condition.wait(min(deadlines))
                     continue
-            # Queries and indexing share one work slot; periodic scans wait while a query runs.
+            # Publication is serialized; question and suggestion model waits use separate workers.
             with self.operation:
                 with self.condition:
                     if self.stopping:
@@ -201,22 +208,30 @@ class Service:
                 try:
                     self.error = None
                     if prepare:
-                        self.task = "로컬 모델 준비 중"
+                        self.task = "Preparing local model"
                         self.embedder.prepare()
                         full = True
-                    self.task = "정밀 검사 중" if deep else "색인 갱신 중"
+                    self.task = "Deep scan in progress" if deep else "Updating index"
                     self.indexer.reconcile(paths=None if full else due, deep=deep)
                     self.ontology.refresh()
-                    if full and self.store.get("suggestions", {}).get("state") == "pending":
-                        self.task = "예상 질문 생성 중"
-                        self.suggestions.refresh()
+                    if (
+                        full
+                        and self.store.get("suggestions", {}).get("state") == "pending"
+                        and (self.suggestion_future is None or self.suggestion_future.done())
+                    ):
+                        self.suggestion_future = self.jobs.pool.submit(self.suggestions.refresh)
                     if full:
                         self.last_reconcile = time.monotonic()
-                    retry = self.store.rows("SELECT path FROM notes WHERE state!='ready'")
+                    retry = self.store.rows(
+                        "SELECT path,vector_retry_at FROM notes WHERE state!='ready' OR "
+                        "(? AND vector_state!=?)",
+                        (self.embedder.ready, self.embedder.key),
+                    )
                     if retry:
                         with self.condition:
                             for row in retry:
-                                self.pending.setdefault(row["path"], time.monotonic() + 30)
+                                wait = max(30, row["vector_retry_at"] - time.time())
+                                self.pending.setdefault(row["path"], time.monotonic() + wait)
                 except Exception as exc:
                     self.error = f"{type(exc).__name__}: {exc}"
                 finally:
@@ -257,6 +272,9 @@ class Service:
             "embedding_model": self.config.embedding_model,
             "embedding_external": self.config.embedding_provider == "external",
             "generation_enabled": self.generator.enabled,
+            "generation_reason": (
+                None if self.generator.enabled else self.generator.unavailable_reason
+            ),
             "generation_model": self.config.generation_model,
             "generation_external": self.config.external_generation,
             "suggestions_external": self.config.external_suggestions,
@@ -282,11 +300,11 @@ class Service:
                 or rows[0]["state"] != "ready"
                 or rows[0]["revision"] != rows[0]["current_revision"]
             ):
-                raise ValueError("근거가 변경되었습니다. 후보를 다시 생성하세요.")
+                raise ValueError("The evidence changed. Generate the candidates again.")
             raw, _ = read_stable(self.indexer.root, rows[0]["path"])
             if digest(raw) != rows[0]["note_hash"]:
                 self.indexer.invalidate([rows[0]["path"]])
-                raise ValueError("원문이 변경되었습니다. 색인이 갱신된 뒤 다시 확인하세요.")
+                raise ValueError("The source text changed. Check again after the index is updated.")
             with self.store.transaction() as db:
                 db.execute(
                     "UPDATE candidates SET status=? WHERE id=?",
@@ -297,6 +315,7 @@ class Service:
 
     def clear(self):
         with self.operation:
+            self.jobs.invalidate()
             if self.observer:
                 self.observer.stop()
                 self.observer.join(timeout=3)
@@ -306,6 +325,7 @@ class Service:
                 self.scan_due = None
                 self.deep = False
             self.store.erase()
+            self.store.put("vault_epoch", uuid.uuid4().hex)
             self.ontology.version = -1
             self.ontology.refresh()
             self.indexer.errors = []
@@ -319,4 +339,5 @@ class Service:
             self.observer.join(timeout=3)
         if self.thread:
             self.thread.join()
+        self.jobs.close()
         self.store.close()

@@ -2,10 +2,13 @@
 
 import fnmatch
 import os
+import stat
+from contextlib import contextmanager
 from pathlib import Path
 
 DEFAULT_EXCLUDES = {".obsidian", ".git", ".trash", "node_modules", ".venv"}
 UF_DATALESS = 0x40000000  # Darwin: do not hydrate iCloud placeholders merely to index them.
+MAX_NOTE_BYTES = 8 * 1024 * 1024
 
 
 def excluded(relative, rules):
@@ -25,16 +28,16 @@ def signature(stat):
 def safe_path(root, relative):
     path = root / relative
     if Path(relative).is_absolute() or not path.resolve().is_relative_to(root):
-        raise ValueError("볼트 밖의 경로는 읽을 수 없습니다.")
+        raise ValueError("Paths outside the vault cannot be read.")
     if any(p.is_symlink() for p in [path, *path.parents] if p != root.parent):
-        raise ValueError("심볼릭 링크는 색인하지 않습니다.")
+        raise ValueError("Symbolic links are not indexed.")
     return path
 
 
 def scan(root, rules):
     found, errors = {}, []
     if not root.is_dir():
-        return {}, ["볼트에 접근할 수 없습니다."]
+        return {}, ["The vault could not be accessed."]
 
     def visit(folder):
         try:
@@ -47,6 +50,8 @@ def scan(root, rules):
                     visit(Path(entry.path))
                 elif entry.name.lower().endswith(".md"):
                     st = entry.stat(follow_symlinks=False)
+                    if not stat.S_ISREG(st.st_mode):
+                        continue
                     found[relative] = {
                         "signature": signature(st),
                         "identity": f"{st.st_dev}:{st.st_ino}",
@@ -66,16 +71,45 @@ def scan(root, rules):
     return found, errors
 
 
+@contextmanager
+def source_parent(root, relative):
+    """Open every relative ancestor without following links, anchored to the vault descriptor."""
+    safe_path(root, relative)
+    parts = Path(relative).parts
+    if not parts or any(part in {"..", "."} for part in parts):
+        raise ValueError("Enter a file path inside the vault.")
+    flags = os.O_RDONLY | os.O_DIRECTORY | os.O_NOFOLLOW
+    parent = os.open(root, flags)
+    try:
+        for part in parts[:-1]:
+            child = os.open(part, flags, dir_fd=parent)
+            os.close(parent)
+            parent = child
+        yield parent, parts[-1]
+    finally:
+        os.close(parent)
+
+
 def read_stable(root, relative):
-    path = safe_path(root, relative)
-    before = path.stat()
-    if getattr(before, "st_flags", 0) & UF_DATALESS:
-        raise OSError("iCloud 다운로드 대기: 로컬에 파일이 없습니다.")
-    fd = os.open(path, os.O_RDONLY | os.O_NOFOLLOW)
-    with os.fdopen(fd, "r", encoding="utf-8-sig") as file:
-        if signature(os.fstat(file.fileno())) != signature(before):
-            raise OSError("파일 교체 중입니다. 다시 확인합니다.")
-        text = file.read()
-    if signature(path.stat()) != signature(before):
-        raise OSError("파일 저장 중입니다. 다시 확인합니다.")
-    return text, signature(before)
+    with source_parent(root, relative) as (parent, name):
+        before = os.stat(name, dir_fd=parent, follow_symlinks=False)
+        if not stat.S_ISREG(before.st_mode):
+            raise ValueError("Only regular Markdown files can be read.")
+        if before.st_size > MAX_NOTE_BYTES:
+            raise ValueError("Each note must be no larger than 8 MiB.")
+        if getattr(before, "st_flags", 0) & UF_DATALESS:
+            raise OSError("Waiting for iCloud download: the file is not available locally.")
+        fd = os.open(name, os.O_RDONLY | os.O_NOFOLLOW | os.O_NONBLOCK, dir_fd=parent)
+        with os.fdopen(fd, "rb") as file:
+            opened = os.fstat(file.fileno())
+            if not stat.S_ISREG(opened.st_mode) or signature(opened) != signature(before):
+                raise OSError("The file is being replaced. It will be checked again.")
+            raw = file.read(MAX_NOTE_BYTES + 1)
+            if len(raw) > MAX_NOTE_BYTES:
+                raise ValueError("Each note must be no larger than 8 MiB.")
+            after = os.fstat(file.fileno())
+        current = os.stat(name, dir_fd=parent, follow_symlinks=False)
+        if signature(after) != signature(before) or signature(current) != signature(before):
+            raise OSError("The file is being saved. It will be checked again.")
+        text = raw.decode("utf-8-sig").replace("\r\n", "\n").replace("\r", "\n")
+        return text, signature(before)

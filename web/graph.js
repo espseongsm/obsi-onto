@@ -1,172 +1,211 @@
-/* Local SVG rendering. Layout runs once per view; navigation does not call a model. */
+/* Shared 3D graph UI for current knowledge and saved answer evidence. */
 const GraphView = (() => {
-  const ns = 'http://www.w3.org/2000/svg';
-  const kinds = {Note: '노트', Section: '원문 문단', Topic: '주제', Tag: '태그', Claim: '검토된 판단', Activity: '검토된 활동'};
-  const origins = {structure: '문서 구조', explicit_link: '명시 링크', explicit_tag: '명시 태그', frontmatter: '노트 속성', user_review: '사용자 검토'};
-  let sequence = 0;
-  function svgNode(tag, attrs, text) {
-    const node = document.createElementNS(ns, tag);
-    for (const [key, value] of Object.entries(attrs || {})) node.setAttribute(key, value);
-    if (text !== undefined) node.textContent = text;
-    return node;
+  const kinds = {Note: 'Note', Section: 'Passage', Topic: 'Topic', Tag: 'Tag', Claim: 'Reviewed claim', Activity: 'Reviewed activity'};
+  const origins = {structure: 'document structure', explicit_link: 'explicit link', explicit_tag: 'explicit tag', frontmatter: 'note property', user_review: 'user reviewed', clarification: 'answer clarification'};
+  const relations = {contains: 'contains passage', taggedWith: 'tagged with', about: 'about topic', records: 'records reviewed statement', linksTo: 'links to', conflict_candidate: 'needs clarification'};
+  const views = new Map(), watchers = new Map();
+  function disposeMounted(root) {
+    for (const [container, scene] of views) if (container === root || root.contains(container)) {
+      scene?.dispose(); views.delete(container);
+    }
   }
-  function positions(nodes, edges) {
-    const points = new Map(nodes.map((node, i) => {
-      const angle = i * 2.39996, radius = 35 + 220 * Math.sqrt(i / Math.max(1, nodes.length));
-      return [node.id, {x: 460 + Math.cos(angle) * radius * 1.5, y: 270 + Math.sin(angle) * radius, dx: 0, dy: 0}];
-    }));
-    const values = [...points.values()];
-    for (let step = 0; step < 150; step++) {
-      for (const p of values) { p.dx = (460 - p.x) * .008; p.dy = (270 - p.y) * .008; }
-      values.forEach((p, i) => values.slice(i + 1).forEach(q => {
-        const x = p.x - q.x, y = p.y - q.y, d = Math.max(1, Math.hypot(x, y));
-        const force = Math.min(18, 4000 / (d * d));
-        p.dx += x / d * force; p.dy += y / d * force;
-        q.dx -= x / d * force; q.dy -= y / d * force;
-      }));
-      for (const edge of edges) {
-        const a = points.get(edge.source), b = points.get(edge.target);
-        if (!a || !b) continue;
-        const x = b.x - a.x, y = b.y - a.y, d = Math.max(1, Math.hypot(x, y));
-        const force = (d - (edge.kind === 'contains' ? 96 : 135)) * .025;
-        a.dx += x / d * force; a.dy += y / d * force;
-        b.dx -= x / d * force; b.dy -= y / d * force;
-      }
-      const cooling = 1 - step / 190;
-      for (const p of values) {
-        p.x = Math.max(75, Math.min(845, p.x + Math.max(-18, Math.min(18, p.dx)) * cooling));
-        p.y = Math.max(40, Math.min(485, p.y + Math.max(-18, Math.min(18, p.dy)) * cooling));
+  function dispose(root) {
+    for (const [container, watcher] of watchers) if (container === root || root.contains(container)) watcher.dispose();
+    disposeMounted(root);
+  }
+  function watch(container, data, onSelect = () => {}) {
+    dispose(container);
+    const disclosure = container.closest('details');
+    let near = false, mounted, snapshot = data.viewState, selected = '', disposed = false;
+    container.style.minHeight = '420px';
+    container.replaceChildren(el('p', 'The 3D graph loads as you scroll into view.', 'hint'));
+    function update() {
+      if (disposed) return;
+      if (near && (!disclosure || disclosure.open)) {
+        if (mounted) return;
+        const restoreId = selected;
+        mounted = mount(container, {...data, viewState: snapshot}, node => {
+          selected = node?.id || ''; onSelect(node);
+        });
+        container.style.minHeight = '';
+        if (restoreId) mounted.select(restoreId);
+      } else if (mounted) {
+        snapshot = mounted.capture();
+        container.style.minHeight = Math.max(420, container.offsetHeight) + 'px';
+        disposeMounted(container); mounted = null;
+        container.replaceChildren(el('p', 'The 3D graph resumes when it comes into view.', 'hint'));
       }
     }
-    return points;
+    const observer = new IntersectionObserver(entries => { near = entries[0].isIntersecting; update(); }, {rootMargin: '200px'});
+    observer.observe(container); disclosure?.addEventListener('toggle', update);
+    const watcher = {
+      select(id) { if (!disposed) { selected = id; mounted?.select(id); } },
+      dispose() {
+        disposed = true; observer.disconnect(); disclosure?.removeEventListener('toggle', update);
+        disposeMounted(container); mounted = null; watchers.delete(container); container.style.minHeight = '';
+      }
+    };
+    watchers.set(container, watcher); return watcher;
+  }
+  function visibility() {
+    for (const [container, scene] of views) scene?.visible(!document.hidden && !container.closest('[hidden]'));
   }
   function mount(container, data, onSelect = () => {}) {
-    container.replaceChildren();
-    container.classList.add('graph-view');
-    const nodes = data.nodes, edges = data.edges;
-    const byId = new Map(nodes.map(node => [node.id, node]));
+    data = GraphCategories.decorate(data);
+    disposeMounted(container); container.replaceChildren(); container.classList.add('graph-view');
+    container.classList.remove('has-selection');
+    const nodes = data.nodes, edges = data.edges, byId = new Map(nodes.map(node => [node.id, node]));
     const heading = el('div', undefined, 'graph-heading');
-    heading.append(el('h3', data.scope === 'answer' ? '이 답변의 근거 그래프' : '기록의 연결 지도'),
-      el('span', `${nodes.length}개 노드 · ${edges.length}개 연결`, 'hint'));
-    container.append(heading);
-    container.append(el('p', data.scope === 'answer'
-      ? '검색으로 찾은 문단과 근거의 연결입니다. 문단·판단을 선택해 맥락을 따라가세요.'
-      : '현재 색인의 일부를 표시합니다. 이름이나 본문으로 찾은 뒤 연결을 탐색하세요.', 'graph-caption'));
-    if (data.omitted_nodes || data.omitted_edges) container.append(el('p',
-      `범위 내 ${data.total_nodes}개 중 ${nodes.length}개 표시 · 최대 ${data.limit}개, 주변 2단계로 제한${data.omitted_edges ? ` · 연결 ${data.omitted_edges}개 생략` : ''}`, 'hint graph-limit'));
+    const title = el('div'); title.append(el('small', 'YOUR KNOWLEDGE, CONNECTED', 'graph-eyebrow'),
+      el('h3', data.scope === 'answer' ? 'Evidence constellation' : 'Knowledge constellation'),
+      el('p', data.context ? 'Follow this answer’s evidence across your vault.' : data.scope === 'answer' ? 'From an answer to the records behind it.' : 'Explore how your notes connect.', 'graph-caption'));
+    const count = el('div', undefined, 'graph-count');
+    for (const [value, label] of [[nodes.length, 'nodes'], [edges.length, 'links']]) {
+      const metric = el('span'); metric.append(el('strong', String(value)), el('small', label)); count.append(metric);
+    }
+    heading.append(title, count); container.append(heading);
     if (!nodes.length) {
-      container.append(el('p', data.query ? '일치하는 노드가 없습니다. 짧은 대상 이름으로 찾아보세요.' : '표시할 연결이 없습니다. 볼트를 연결하거나 근거가 있는 질문을 해보세요.', 'empty'));
-      return {select() {}};
+      container.append(el('p', data.query ? 'No matching nodes. Try a shorter name or phrase.' : 'No connections to show. Connect a vault or ask a question about your notes.', 'empty'));
+      return {select() {}, capture() {}, journey() {}, stopJourney() {}};
     }
-    const legend = el('div', undefined, 'graph-legend');
-    for (const [kind, label] of Object.entries(kinds)) {
-      if (nodes.some(node => node.kind === kind)) legend.append(el('span', label, 'kind-' + kind));
-    }
-    legend.append(el('span', '초록 테두리: 검색 일치', 'legend-match'), el('span', '주황 테두리: 선택', 'legend-picked'));
-    container.append(legend);
-    const toolbar = el('div', undefined, 'graph-toolbar');
-    const picker = el('select'); picker.setAttribute('aria-label', '그래프 노드 선택');
-    picker.append(new Option('노트·문단·판단 선택…', ''));
+    const toolbar = el('div', undefined, 'graph-toolbar'), picker = el('select');
+    picker.setAttribute('aria-label', 'Select a graph node'); picker.append(new Option('Choose a note, passage, or idea…', ''));
     for (const node of nodes) picker.append(new Option(`${kinds[node.kind]} · ${node.label.slice(0, 45)}${node.start ? ` (${node.path}:${node.start})` : ''}`, node.id));
-    toolbar.append(picker);
-    const controls = el('div', undefined, 'graph-controls');
-    const svg = svgNode('svg', {viewBox: '0 0 920 540', role: 'group', 'aria-label': '노트와 근거의 연결 그래프'});
-    const markerId = 'graph-arrow-' + ++sequence;
-    const marker = svgNode('marker', {id: markerId, viewBox: '0 0 10 10', refX: 18, refY: 5, markerWidth: 5, markerHeight: 5, orient: 'auto-start-reverse'});
-    marker.append(svgNode('path', {d: 'M 0 0 L 10 5 L 0 10 z', fill: '#9aa992'}));
-    const defs = svgNode('defs'); defs.append(marker); svg.append(defs);
-    const coords = positions(nodes, edges), lines = [], groups = new Map();
-    for (const edge of edges) {
-      const a = coords.get(edge.source), b = coords.get(edge.target);
-      const line = svgNode('line', {x1: a.x, y1: a.y, x2: b.x, y2: b.y, class: 'graph-edge edge-' + edge.kind, 'marker-end': `url(#${markerId})`});
-      line.append(svgNode('title', {}, `${byId.get(edge.source).label} → ${byId.get(edge.target).label} · ${edge.label} (${origins[edge.origin]})`));
-      svg.append(line); lines.push([edge, line]);
+    const controls = el('div', undefined, 'graph-controls'); toolbar.append(picker, controls);
+    const body = el('div', undefined, 'graph-body'), stage = el('div', undefined, 'graph-stage');
+    const hud = el('div', undefined, 'graph-hud');
+    const mode = el('span', 'Drag to rotate', 'graph-motion'), focusLabel = el('span', 'All connections', 'graph-focus');
+    hud.append(mode, focusLabel);
+    const help = el('div', 'Select a node to explore its connections.', 'graph-gesture');
+    stage.append(hud, help);
+    const inspector = el('aside', undefined, 'graph-inspector'); inspector.setAttribute('aria-live', 'polite');
+    inspector.setAttribute('aria-label', 'Selected record and connections'); inspector.hidden = true;
+    inspector.onkeydown = event => {
+      if (event.key === 'Escape') { event.preventDefault(); select(''); picker.focus({preventScroll: true}); }
+    };
+    body.append(stage, toolbar, inspector);
+    const legend = el('div', undefined, 'graph-legend');
+    legend.setAttribute('aria-label', 'Knowledge area color legend');
+    legend.append(el('strong', 'Knowledge areas', 'graph-legend-title'));
+    for (const {id, label} of GraphCategories.items) {
+      const count = nodes.filter(node => node.category === id).length;
+      if (count) legend.append(el('span', `${label} ${count}`, 'graph-legend-item category-' + id));
     }
-    for (const node of nodes) {
-      const p = coords.get(node.id);
-      const group = svgNode('g', {transform: `translate(${p.x} ${p.y})`, tabindex: 0, role: 'button', 'aria-label': `${kinds[node.kind]}: ${node.label}${node.start ? ` · ${node.path}:${node.start}` : ''}`, 'aria-pressed': 'false'});
-      const label = node.label.length > 16 ? node.label.slice(0, 15) + '…' : node.label;
-      group.append(svgNode('circle', {r: node.kind === 'Note' ? 12 : 8}),
-        svgNode('text', {y: node.kind === 'Note' ? 30 : 26, 'text-anchor': 'middle'}, label),
-        svgNode('title', {}, `${kinds[node.kind]} · ${node.label}${node.path ? '\n' + node.path : ''}${node.start ? `:${node.start}–${node.end}` : ''}`));
-      group.onclick = () => select(node.id);
-      group.onkeydown = event => { if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); select(node.id); } };
-      groups.set(node.id, group); svg.append(group);
+    if (edges.some(e => e.kind === 'conflict_candidate')) legend.append(el('span', 'Orange dashed line · discrepancy to review', 'graph-conflict-key'));
+    const guide = el('button', 'Graph guide ↗', 'graph-guide'); guide.type = 'button';
+    guide.setAttribute('aria-expanded', 'false');
+    guide.onclick = () => {
+      if (picker.value) select('');
+      inspector.hidden = !inspector.hidden;
+      guide.setAttribute('aria-expanded', String(!inspector.hidden));
+    };
+    legend.append(guide);
+    container.append(body, legend);
+    if (data.omitted_nodes || data.omitted_edges) container.append(el('p',
+      `Showing ${nodes.length} of ${data.total_nodes} nodes · up to ${data.limit} nodes within 2 hops${data.omitted_edges ? ` · ${data.omitted_edges} links omitted` : ''}`, 'graph-limit'));
+    let scene;
+    try { scene = GraphScene.mount(stage, data, select); }
+    catch (error) {
+      stage.dataset.renderer = 'unavailable';
+      stage.append(el('p', '3D rendering is unavailable in this browser. Use the node list to explore connections and source text.', 'graph-unavailable'));
     }
-    const inspector = el('div', undefined, 'graph-inspector');
-    inspector.setAttribute('aria-live', 'polite');
-    let view = {x: 0, y: 0, width: 920, height: 540}, drag;
-    function drawView() { svg.setAttribute('viewBox', `${view.x} ${view.y} ${view.width} ${view.height}`); }
-    function zoom(factor) {
-      const width = Math.max(320, Math.min(1840, view.width * factor)), height = width * 540 / 920;
-      view.x += (view.width - width) / 2; view.y += (view.height - height) / 2;
-      view.width = width; view.height = height; drawView();
+    views.set(container, scene);
+    function button(label, title, work, toggle) {
+      const control = el('button', label); control.type = 'button'; control.setAttribute('aria-label', title); control.title = title;
+      if (toggle !== undefined) control.setAttribute('aria-pressed', String(toggle));
+      control.onclick = () => work(control); controls.append(control); return control;
     }
     for (const [label, title, work] of [
-      ['−', '그래프 축소', () => zoom(1.25)], ['+', '그래프 확대', () => zoom(.8)],
-      ['전체 보기', '그래프 위치 초기화', () => { view = {x: 0, y: 0, width: 920, height: 540}; drawView(); }],
-      ['선택 해제', '그래프 선택 해제', () => select('')]
-    ]) {
-      const button = el('button', label); button.type = 'button'; button.setAttribute('aria-label', title); button.onclick = work; controls.append(button);
+      ['−', 'Zoom out', () => scene?.zoom(1.2)], ['+', 'Zoom in', () => scene?.zoom(.8)],
+      ['⤢', 'Reset graph view', () => scene?.reset()]
+    ]) button(label, title, work).disabled = !scene;
+    const rotate = button('⟳', 'Auto-rotate graph', control => {
+      const enabled = control.getAttribute('aria-pressed') !== 'true';
+      control.setAttribute('aria-pressed', String(enabled)); scene?.rotate(enabled);
+      mode.textContent = enabled ? 'Slow rotation' : 'Drag to rotate';
+    }, false);
+    rotate.disabled = !scene;
+    button('Labels', 'Show node labels', control => {
+      const enabled = control.getAttribute('aria-pressed') !== 'true';
+      control.setAttribute('aria-pressed', String(enabled)); scene?.labels(enabled);
+    }, true).disabled = !scene;
+    const journeyIds = (data.journeyIds || []).filter(id => byId.has(id));
+    let journeyObserver;
+    if (journeyIds.length && scene) {
+      const journeys = el('div', undefined, 'graph-journey-controls');
+      journeys.setAttribute('aria-label', 'Evidence tour');
+      toolbar.append(journeys);
+      const replay = el('button', 'Follow evidence'), overview = el('button', 'All evidence'), stop = el('button', 'Stop tour');
+      for (const control of [replay, overview, stop]) { control.type = 'button'; journeys.append(control); control.disabled = !scene; }
+      replay.title = 'The camera visits evidence locations. This is not the LLM’s reasoning sequence.';
+      replay.onclick = () => journey(journeyIds, {phase: 'search'});
+      overview.onclick = () => journey(journeyIds, {phase: 'complete'});
+      stop.onclick = () => scene?.stopJourney();
+      function updateJourney() {
+        const state = stage.querySelector('canvas')?.dataset;
+        const running = state?.journey === 'running';
+        stop.hidden = !running; replay.disabled = !scene || running;
+        mode.textContent = running ? state.phase === 'complete' ? 'Framing all evidence' : 'Evidence tour' :
+          state?.journey === 'complete' ? 'All evidence' : 'Drag to rotate';
+      }
+      journeyObserver = new MutationObserver(updateJourney);
+      journeyObserver.observe(stage, {subtree: true, attributes: true, attributeFilter: ['data-journey', 'data-phase']});
+      updateJourney();
     }
-    toolbar.append(controls); container.append(toolbar, svg, inspector);
-    svg.onpointerdown = event => {
-      if (event.target.closest('.graph-node')) return;
-      drag = {x: event.clientX, y: event.clientY, view: {...view}};
-      svg.setPointerCapture(event.pointerId);
-    };
-    svg.onpointermove = event => {
-      if (!drag) return;
-      const scale = view.width / svg.getBoundingClientRect().width;
-      view.x = drag.view.x - (event.clientX - drag.x) * scale;
-      view.y = drag.view.y - (event.clientY - drag.y) * scale;
-      drawView();
-    };
-    svg.onpointerup = svg.onpointercancel = () => { drag = null; };
+    const clear = button('Clear', 'Clear node selection', () => select('')); clear.hidden = true;
     picker.onchange = () => select(picker.value);
     function select(id) {
-      const selected = byId.get(id);
-      picker.value = selected ? id : '';
-      const focus = new Set(selected ? [id] : nodes.filter(n => n.matched).map(n => n.id));
-      const neighborhood = new Set(focus);
-      for (const edge of edges) if (focus.has(edge.source) || focus.has(edge.target)) {
-        neighborhood.add(edge.source); neighborhood.add(edge.target);
-      }
-      for (const node of nodes) {
-        const group = groups.get(node.id);
-        group.setAttribute('class', ['graph-node', 'kind-' + node.kind, node.matched ? 'matched' : '', node.id === id ? 'picked' : '', focus.size && !neighborhood.has(node.id) ? 'dim' : ''].join(' '));
-        group.setAttribute('aria-pressed', String(node.id === id));
-      }
-      for (const [edge, line] of lines) {
-        const highlighted = focus.has(edge.source) || focus.has(edge.target);
-        line.classList.toggle('highlighted', highlighted);
-        line.classList.toggle('dim', focus.size > 0 && !highlighted);
-      }
+      const focus = GraphLayout.focus(nodes, edges, id), selected = focus.selected;
+      picker.value = selected ? id : ''; scene?.select(focus);
+      container.classList.toggle('has-selection', !!selected); clear.hidden = !selected;
+      inspector.hidden = !selected; guide.setAttribute('aria-expanded', String(!!selected));
+      focusLabel.textContent = selected ? `${kinds[selected.kind]} · ${focus.neighbors.size - 1} direct connections` : focus.seeds.size ? `${focus.seeds.size} search matches` : 'All connections';
       inspector.replaceChildren();
-      if (!selected) inspector.append(el('strong', '연결의 근거를 확인하세요'), el('p', '노드를 선택하면 직접 연결된 이웃이 강조됩니다. 빈 공간을 끌어 이동하고 + / −로 확대·축소할 수 있습니다. 선은 명시 링크·속성·문서 구조·검토된 관계이며, 배치 거리는 의미 유사도 점수가 아닙니다.', 'hint'));
-      else {
-        inspector.append(el('strong', `${kinds[selected.kind]} · ${selected.label}`));
-        if (selected.path) inspector.append(el('p', `${selected.path}${selected.start ? `:${selected.start}–${selected.end}` : ''} · 버전 ${selected.revision} · 기록일 ${selected.record_date || '미상'}`, 'hint'));
-        if (selected.routes?.length) inspector.append(el('p', `검색 경로: ${selected.routes.join(' + ')}`, 'hint'));
-        if (selected.event_date || selected.activity_state) inspector.append(el('p', `사건일 ${selected.event_date || '미상'} · 활동 상태 ${selected.activity_state}`, 'hint'));
+      const close = el('button', '×', 'graph-inspector-close'); close.type = 'button'; close.setAttribute('aria-label', 'Close node details');
+      close.onclick = () => { select(''); picker.focus({preventScroll: true}); }; inspector.append(close);
+      if (!selected) {
+        inspector.append(el('span', 'EXPLORE YOUR NOTES', 'inspector-eyebrow'), el('h4', 'From one note\nto the next idea'),
+          el('p', 'Select a node or choose a record from the list to see its direct connections and supporting evidence.', 'hint'),
+          el('div', 'Drag · rotate\nScroll / + − · zoom\nRight-drag / two fingers · pan\nArrow keys · rotate / Home · fit all', 'graph-instructions'),
+          el('p', 'Colors group nodes into knowledge areas using rules based on tags, topics, names, and folders. Original node types remain visible in the list and details. These visual categories do not change stored relationships or establish semantic similarity. Selection keeps the category color and adds a gold ring and highlighted connections. Rings also mark search matches. Lines represent actual links, properties, document structure, and reviewed relationships. Orange dashed lines mark discrepancies to review. 3D positions and distances help navigation.', 'hint'));
+      } else {
+        const category = GraphCategories.items.find(item => item.id === selected.category);
+        inspector.append(el('span', category.label, 'graph-kind-badge category-' + category.id),
+          el('span', kinds[selected.kind], 'graph-node-kind hint'), el('h4', selected.label),
+          el('p', selected.categoryReason, 'graph-category-reason hint'));
+        if (data.context) inspector.append(el('p', selected.context_only ? 'Background record from the current vault' : data.scope === 'answer' ? 'Evidence saved with this answer' : 'Evidence found for this question', 'hint'));
+        if (selected.path) inspector.append(el('p', `${selected.path}${selected.start ? `:${selected.start}–${selected.end}` : ''} · revision ${selected.revision} · recorded ${selected.record_date || 'unknown'}`, 'hint'));
+        if (selected.routes?.length) inspector.append(el('p', `Found by: ${selected.routes.map(uiText).join(' + ')}`, 'hint'));
+        if (selected.event_date || selected.activity_state) inspector.append(el('p', `Event date: ${selected.event_date || 'unknown'} · status: ${selected.activity_state}`, 'hint'));
         if (selected.excerpt) inspector.append(el('pre', selected.excerpt));
-        const relations = el('ul', undefined, 'graph-relations');
+        inspector.append(el('strong', 'Connected records', 'graph-relation-title'));
+        const relationList = el('ul', undefined, 'graph-relations');
         for (const edge of edges.filter(e => e.source === id || e.target === id)) {
           const other = byId.get(edge.source === id ? edge.target : edge.source);
-          const button = el('button', `${edge.source === id ? '→' : '←'} ${other.label} · ${edge.label} (${origins[edge.origin]})`);
-          button.onclick = () => select(other.id);
-          const li = el('li'); li.append(button); relations.append(li);
+          if (!other) continue;
+          const link = el('button', `${edge.source === id ? '→' : '←'} ${other.label} · ${relations[edge.kind] || edge.label || edge.kind} (${origins[edge.origin] || edge.origin})`);
+          link.type = 'button'; link.onclick = () => select(other.id);
+          const li = el('li'); li.append(link); relationList.append(li);
         }
-        inspector.append(relations);
-        if (selected.uri) { const open = el('a', 'Obsidian에서 원문 열기 ↗'); open.href = selected.uri; inspector.append(open); }
+        inspector.append(relationList);
+        if (selected.uri) { const open = el('a', 'Open source in Obsidian ↗'); open.href = selected.uri; inspector.append(open); }
         if (data.scope === 'answer' && selected.citation) {
-          const source = el('a', `${selected.citation} 근거 카드로 이동 ↓`); source.href = '#source-' + selected.citation; inspector.append(source);
+          const source = el('a', `View source ${selected.citation} ↓`); source.href = '#' + (data.sourcePrefix || 'source-') + selected.citation; inspector.append(source);
         }
       }
       onSelect(selected);
     }
-    select('');
-    return {select};
+    function journey(ids, options) {
+      select(''); rotate.setAttribute('aria-pressed', 'false');
+      scene?.journey(ids, options);
+    }
+    if (scene) {
+      const disposeScene = scene.dispose;
+      scene.dispose = () => { journeyObserver?.disconnect(); disposeScene(); };
+    }
+    select(''); visibility();
+    return {select, capture: () => scene?.capture(), journey, stopJourney: () => scene?.stopJourney()};
   }
-  return {mount};
+  window.addEventListener('pagehide', () => dispose(document));
+  return {mount, watch, dispose, visibility};
 })();

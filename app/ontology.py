@@ -7,7 +7,7 @@ from pathlib import PurePosixPath
 from urllib.parse import quote
 
 from pyshacl import validate
-from rdflib import RDF, RDFS, Graph, Literal, Namespace, URIRef
+from rdflib import RDF, RDFS, Graph, Literal, Namespace
 
 from app.config import ROOT
 from app.markdown import strings
@@ -20,6 +20,10 @@ def resolve_links(store):
     notes = store.rows("SELECT * FROM notes WHERE state='ready'")
     sections = store.rows("SELECT * FROM sections")
     by_path = {n["path"].removesuffix(".md"): n for n in notes}
+    by_id = {n["id"]: n for n in notes}
+    by_note = {}
+    for section in sections:
+        by_note.setdefault(section["note_id"], []).append(section)
     names = {}
     for note in notes:
         for name in {PurePosixPath(note["path"]).stem, note["title"], *json.loads(note["aliases"])}:
@@ -37,7 +41,7 @@ def resolve_links(store):
             else:
                 relative = posixpath.normpath(str(PurePosixPath(link["path"]).parent / target))
                 if not target:
-                    candidates = [n for n in notes if n["id"] == link["note_id"]]
+                    candidates = [by_id[link["note_id"]]] if link["note_id"] in by_id else []
                 elif relative in by_path:
                     candidates = [by_path[relative]]
                 elif target in by_path:
@@ -55,9 +59,8 @@ def resolve_links(store):
                 fragment = link["fragment"]
                 matches = [
                     s
-                    for s in sections
-                    if s["note_id"] == selected
-                    and (
+                    for s in by_note.get(selected, [])
+                    if (
                         (
                             fragment.startswith("^")
                             and re.search(
@@ -90,9 +93,13 @@ class Ontology:
     def __init__(self, store):
         self.store, self.version = store, -1
         self.graph = Graph()
-        self.validation = {"conforms": True, "report": "아직 색인하지 않았습니다."}
+        self.validation = {"conforms": True, "report": "Not indexed yet."}
 
     def refresh(self):
+        with self.store.lock:
+            self._refresh()
+
+    def _refresh(self):
         version = self.store.get("generation", 0)
         if version == self.version:
             return
@@ -130,11 +137,10 @@ class Ontology:
                 graph.add((tag_node, RDFS.label, Literal(tag)))
                 graph.add((node, ONTO.taggedWith, tag_node))
         # Frontmatter subjects are document context, not inferred claims or activities.
+        fronts = {s["note_id"]: s for s in active if s["start"] == 1}
         for note in notes:
             metadata = json.loads(note["metadata"])
-            front = next(
-                (s for s in active if s["note_id"] == note["id"] and s["start"] == 1), None
-            )
+            front = fronts.get(note["id"])
             if not front:
                 continue
             for field in ("topics", "project", "company", "people"):
@@ -186,34 +192,46 @@ class Ontology:
             graph.add((topic, RDFS.label, Literal(candidate["topic"])))
         conforms, _, report = validate(graph, shacl_graph=str(ROOT / "ontology/shapes.ttl"))
         if not conforms:
-            raise ValueError("관계의 출처 구조 검증에 실패했습니다: " + str(report))
+            raise ValueError("Relationship provenance validation failed: " + str(report))
         self.graph, self.version = graph, version
         self.validation = {"conforms": True, "report": str(report)}
 
     def neighbors(self, section_ids):
-        self.refresh()
-        results = []
-        query = """PREFIX o: <https://obsi-onto.local/schema/>
-        SELECT DISTINCT ?target ?via WHERE {
-          ?seed o:note ?home .
-          { ?edge o:source ?seed ; o:target ?via .
-            { ?edge o:targetSection ?target . }
-            UNION { FILTER NOT EXISTS { ?edge o:targetSection ?anchor }
-                    ?via o:contains ?target . }
-          }
-          UNION { ?target o:linksTo ?home . BIND(?home AS ?via) }
-          UNION { ?a o:source ?seed ; o:about ?via . ?b o:about ?via ; o:source ?target . }
-          UNION { ?seed o:about ?via . ?target o:about ?via . }
-        } LIMIT 60"""
-        for sid in section_ids:
-            for row in self.graph.query(query, initBindings={"seed": N[f"section/{sid}"]}):
-                if isinstance(row.target, URIRef) and "/section/" in str(row.target):
-                    results.append(
-                        {
-                            "section_id": int(str(row.target).rsplit("/", 1)[1]),
-                            "from": sid,
-                            "via": str(row.via),
-                            "kind": "graph",
-                        }
-                    )
-        return results
+        # Expand the same fixed relations through indexed triples, without SPARQL parsing.
+        with self.store.lock:
+            self.refresh()
+            graph, results = self.graph, []
+            for sid in section_ids:
+                seed = N[f"section/{sid}"]
+                pairs = set()
+                for home in graph.objects(seed, ONTO.note):
+                    pairs.update((target, home) for target in graph.subjects(ONTO.linksTo, home))
+                for edge in graph.subjects(ONTO.source, seed):
+                    for via in graph.objects(edge, ONTO.target):
+                        anchors = list(graph.objects(edge, ONTO.targetSection))
+                        pairs.update(
+                            (target, via)
+                            for target in (anchors or graph.objects(via, ONTO.contains))
+                        )
+                    for via in graph.objects(edge, ONTO.about):
+                        for other in graph.subjects(ONTO.about, via):
+                            pairs.update(
+                                (target, via) for target in graph.objects(other, ONTO.source)
+                            )
+                for via in graph.objects(seed, ONTO.about):
+                    pairs.update((target, via) for target in graph.subjects(ONTO.about, via))
+                valid = sorted(
+                    (str(target), str(via))
+                    for target, via in pairs
+                    if str(target).startswith(str(N) + "section/")
+                )
+                results.extend(
+                    {
+                        "section_id": int(target.rsplit("/", 1)[1]),
+                        "from": sid,
+                        "via": via,
+                        "kind": "graph",
+                    }
+                    for target, via in valid[:60]
+                )
+            return results

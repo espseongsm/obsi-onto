@@ -1,0 +1,276 @@
+{
+  "date": "2026-09-28",
+  "python": "3.12.11",
+  "platform": "macOS-27.0-arm64-arm-64bit",
+  "clock": "perf_counter wall-clock milliseconds",
+  "method": "100/500/1000 synthetic notes; one forward anchored link; 20 shared topics; 384D FakeEmbedder; no watcher/server/ONNX/LLM; three sequential repetitions except cold index and single-note update; cProfile runs separately, excluded from timings",
+  "results": [
+    {
+      "notes": 100,
+      "initial_index": {
+        "median_ms": 272.199,
+        "samples_ms": [
+          272.199
+        ]
+      },
+      "sections": 400,
+      "unchanged_scan": {
+        "median_ms": 2.683,
+        "samples_ms": [
+          2.738,
+          2.356,
+          2.683
+        ]
+      },
+      "unchanged_metrics": {
+        "body_reads": 0,
+        "embedding_calls": 0,
+        "files_checked": 100,
+        "seconds": 0.0026,
+        "cpu_seconds": 0.0026,
+        "disk_input_blocks": 0
+      },
+      "rdf_rebuild_shacl": {
+        "median_ms": 66.319,
+        "samples_ms": [
+          66.319,
+          61.868,
+          75.424
+        ]
+      },
+      "triples": 4070,
+      "warm_graph_view": {
+        "median_ms": 7.338,
+        "samples_ms": [
+          7.524,
+          7.338,
+          7.078
+        ]
+      },
+      "retrieve_lexical": {
+        "median_ms": 1.194,
+        "samples_ms": [
+          1.741,
+          1.194,
+          1.176
+        ]
+      },
+      "retrieve_semantic": {
+        "median_ms": 3.527,
+        "samples_ms": [
+          3.753,
+          3.527,
+          3.414
+        ]
+      },
+      "retrieve_hybrid": {
+        "median_ms": 3.198,
+        "samples_ms": [
+          3.198,
+          3.169,
+          3.8
+        ]
+      },
+      "ask_no_llm": {
+        "median_ms": 18.766,
+        "samples_ms": [
+          19.232,
+          18.766,
+          18.169
+        ]
+      },
+      "one_note_index": {
+        "median_ms": 16.386,
+        "samples_ms": [
+          16.386
+        ]
+      },
+      "one_note_rdf_refresh": {
+        "median_ms": 62.856,
+        "samples_ms": [
+          62.856
+        ]
+      },
+      "rdf_profile": "         993072 function calls (990323 primitive calls) in 0.216 seconds\n\n   Ordered by: cumulative time\n   List reduced from 389 to 12 due to restriction <12>\n\n   ncalls  tottime  percall  cumtime  percall filename:lineno(function)\n        1    0.000    0.000    0.216    0.216 refactor_baseline.py:67(rebuild)\n        1    0.000    0.000    0.216    0.216 ontology.py:98(refresh)\n        1    0.003    0.003    0.216    0.216 ontology.py:102(_refresh)\n        1    0.000    0.000    0.159    0.159 entrypoints.py:33(validate)\n        1    0.000    0.000    0.157    0.157 validator.py:193(run)\n  2322/17    0.014    0.000    0.156    0.009 shape.py:621(validate)\n        2    0.000    0.000    0.154    0.077 shape_based_constraints.py:76(evaluate)\n        8    0.002    0.000    0.154    0.019 shape_based_constraints.py:108(_evaluate_property_shape)\n    19662    0.009    0.000    0.054    0.000 graph.py:2324(triples)\n     7226    0.007    0.000    0.050    0.000 shape.py:724(<genexpr>)\n    15853    0.004    0.000    0.050    0.000 graph.py:987(objects)\n    25986    0.014    0.000    0.042    0.000 memory.py:411(triples)\n\n\n",
+      "retrieval_profile": "         4725 function calls in 0.005 seconds\n\n   Ordered by: cumulative time\n   List reduced from 111 to 12 due to restriction <12>\n\n   ncalls  tottime  percall  cumtime  percall filename:lineno(function)\n        1    0.000    0.000    0.005    0.005 search.py:178(retrieve)\n       18    0.001    0.000    0.004    0.000 storage.py:110(rows)\n       18    0.003    0.000    0.003    0.000 {method 'execute' of 'sqlite3.Connection' objects}\n        2    0.000    0.000    0.001    0.000 search.py:121(eligible)\n       12    0.000    0.000    0.000    0.000 search.py:142(source)\n      473    0.000    0.000    0.000    0.000 markdown.py:21(searchable_body)\n      379    0.000    0.000    0.000    0.000 __init__.py:169(fullmatch)\n        1    0.000    0.000    0.000    0.000 ontology.py:199(neighbors)\n       12    0.000    0.000    0.000    0.000 indexer.py:27(root)\n       12    0.000    0.000    0.000    0.000 pathlib.py:437(__str__)\n       13    0.000    0.000    0.000    0.000 storage.py:114(get)\n       12    0.000    0.000    0.000    0.000 parse.py:978(urlencode)\n\n\n"
+    },
+    {
+      "notes": 500,
+      "initial_index": {
+        "median_ms": 1653.475,
+        "samples_ms": [
+          1653.475
+        ]
+      },
+      "sections": 2000,
+      "unchanged_scan": {
+        "median_ms": 12.577,
+        "samples_ms": [
+          12.867,
+          12.577,
+          12.165
+        ]
+      },
+      "unchanged_metrics": {
+        "body_reads": 0,
+        "embedding_calls": 0,
+        "files_checked": 500,
+        "seconds": 0.0121,
+        "cpu_seconds": 0.0119,
+        "disk_input_blocks": 0
+      },
+      "rdf_rebuild_shacl": {
+        "median_ms": 335.076,
+        "samples_ms": [
+          348.612,
+          326.686,
+          335.076
+        ]
+      },
+      "triples": 20070,
+      "warm_graph_view": {
+        "median_ms": 36.452,
+        "samples_ms": [
+          66.322,
+          36.127,
+          36.452
+        ]
+      },
+      "retrieve_lexical": {
+        "median_ms": 4.398,
+        "samples_ms": [
+          4.605,
+          4.398,
+          4.289
+        ]
+      },
+      "retrieve_semantic": {
+        "median_ms": 19.71,
+        "samples_ms": [
+          20.026,
+          19.635,
+          19.71
+        ]
+      },
+      "retrieve_hybrid": {
+        "median_ms": 20.565,
+        "samples_ms": [
+          20.511,
+          21.659,
+          20.565
+        ]
+      },
+      "ask_no_llm": {
+        "median_ms": 47.029,
+        "samples_ms": [
+          50.471,
+          47.029,
+          45.038
+        ]
+      },
+      "one_note_index": {
+        "median_ms": 17.093,
+        "samples_ms": [
+          17.093
+        ]
+      },
+      "one_note_rdf_refresh": {
+        "median_ms": 321.111,
+        "samples_ms": [
+          321.111
+        ]
+      },
+      "rdf_profile": "         4871872 function calls (4859923 primitive calls) in 1.093 seconds\n\n   Ordered by: cumulative time\n   List reduced from 389 to 12 due to restriction <12>\n\n   ncalls  tottime  percall  cumtime  percall filename:lineno(function)\n        1    0.000    0.000    1.093    1.093 refactor_baseline.py:67(rebuild)\n        1    0.000    0.000    1.093    1.093 ontology.py:98(refresh)\n        1    0.013    0.013    1.092    1.092 ontology.py:102(_refresh)\n        1    0.000    0.000    0.769    0.769 entrypoints.py:33(validate)\n        1    0.000    0.000    0.766    0.766 validator.py:193(run)\n 11522/17    0.066    0.000    0.765    0.045 shape.py:621(validate)\n        2    0.000    0.000    0.760    0.380 shape_based_constraints.py:76(evaluate)\n        8    0.009    0.001    0.760    0.095 shape_based_constraints.py:108(_evaluate_property_shape)\n    96862    0.044    0.000    0.262    0.000 graph.py:2324(triples)\n    36026    0.033    0.000    0.247    0.000 shape.py:724(<genexpr>)\n    78253    0.021    0.000    0.246    0.000 graph.py:987(objects)\n    21582    0.007    0.000    0.215    0.000 graph.py:617(add)\n\n\n",
+      "retrieval_profile": "         12725 function calls in 0.022 seconds\n\n   Ordered by: cumulative time\n   List reduced from 111 to 12 due to restriction <12>\n\n   ncalls  tottime  percall  cumtime  percall filename:lineno(function)\n        1    0.000    0.000    0.022    0.022 search.py:178(retrieve)\n       18    0.003    0.000    0.021    0.001 storage.py:110(rows)\n       18    0.017    0.001    0.017    0.001 {method 'execute' of 'sqlite3.Connection' objects}\n        2    0.000    0.000    0.003    0.002 search.py:121(eligible)\n     2073    0.000    0.000    0.001    0.000 markdown.py:21(searchable_body)\n     1579    0.000    0.000    0.001    0.000 __init__.py:169(fullmatch)\n       12    0.000    0.000    0.000    0.000 search.py:142(source)\n     1579    0.000    0.000    0.000    0.000 {method 'fullmatch' of 're.Pattern' objects}\n     1587    0.000    0.000    0.000    0.000 __init__.py:280(_compile)\n        1    0.000    0.000    0.000    0.000 ontology.py:199(neighbors)\n     2123    0.000    0.000    0.000    0.000 {method 'startswith' of 'str' objects}\n     1849    0.000    0.000    0.000    0.000 {built-in method builtins.isinstance}\n\n\n"
+    },
+    {
+      "notes": 1000,
+      "initial_index": {
+        "median_ms": 2724.463,
+        "samples_ms": [
+          2724.463
+        ]
+      },
+      "sections": 4000,
+      "unchanged_scan": {
+        "median_ms": 24.844,
+        "samples_ms": [
+          25.022,
+          24.32,
+          24.844
+        ]
+      },
+      "unchanged_metrics": {
+        "body_reads": 0,
+        "embedding_calls": 0,
+        "files_checked": 1000,
+        "seconds": 0.0247,
+        "cpu_seconds": 0.0245,
+        "disk_input_blocks": 0
+      },
+      "rdf_rebuild_shacl": {
+        "median_ms": 720.944,
+        "samples_ms": [
+          693.486,
+          720.944,
+          740.048
+        ]
+      },
+      "triples": 40070,
+      "warm_graph_view": {
+        "median_ms": 74.348,
+        "samples_ms": [
+          74.348,
+          75.18,
+          74.287
+        ]
+      },
+      "retrieve_lexical": {
+        "median_ms": 8.513,
+        "samples_ms": [
+          8.826,
+          8.163,
+          8.513
+        ]
+      },
+      "retrieve_semantic": {
+        "median_ms": 39.591,
+        "samples_ms": [
+          39.591,
+          39.501,
+          40.401
+        ]
+      },
+      "retrieve_hybrid": {
+        "median_ms": 39.926,
+        "samples_ms": [
+          39.442,
+          40.101,
+          39.926
+        ]
+      },
+      "ask_no_llm": {
+        "median_ms": 79.206,
+        "samples_ms": [
+          84.64,
+          78.968,
+          79.206
+        ]
+      },
+      "one_note_index": {
+        "median_ms": 32.84,
+        "samples_ms": [
+          32.84
+        ]
+      },
+      "one_note_rdf_refresh": {
+        "median_ms": 737.927,
+        "samples_ms": [
+          737.927
+        ]
+      },
+      "rdf_profile": "         9720372 function calls (9696923 primitive calls) in 2.197 seconds\n\n   Ordered by: cumulative time\n   List reduced from 389 to 12 due to restriction <12>\n\n   ncalls  tottime  percall  cumtime  percall filename:lineno(function)\n        1    0.000    0.000    2.197    2.197 refactor_baseline.py:67(rebuild)\n        1    0.001    0.001    2.197    2.197 ontology.py:98(refresh)\n        1    0.027    0.027    2.197    2.197 ontology.py:102(_refresh)\n        1    0.000    0.000    1.527    1.527 entrypoints.py:33(validate)\n        1    0.000    0.000    1.525    1.525 validator.py:193(run)\n 23022/17    0.131    0.000    1.524    0.090 shape.py:621(validate)\n        2    0.000    0.000    1.515    0.757 shape_based_constraints.py:76(evaluate)\n        8    0.019    0.002    1.515    0.189 shape_based_constraints.py:108(_evaluate_property_shape)\n   193362    0.089    0.000    0.520    0.000 graph.py:2324(triples)\n   156253    0.041    0.000    0.492    0.000 graph.py:987(objects)\n    72026    0.066    0.000    0.490    0.000 shape.py:724(<genexpr>)\n    43082    0.015    0.000    0.446    0.000 graph.py:617(add)\n\n\n",
+      "retrieval_profile": "         22725 function calls in 0.043 seconds\n\n   Ordered by: cumulative time\n   List reduced from 111 to 12 due to restriction <12>\n\n   ncalls  tottime  percall  cumtime  percall filename:lineno(function)\n        1    0.000    0.000    0.043    0.043 search.py:178(retrieve)\n       18    0.006    0.000    0.042    0.002 storage.py:110(rows)\n       18    0.034    0.002    0.034    0.002 {method 'execute' of 'sqlite3.Connection' objects}\n        2    0.000    0.000    0.006    0.003 search.py:121(eligible)\n     4073    0.001    0.000    0.003    0.000 markdown.py:21(searchable_body)\n     3079    0.000    0.000    0.002    0.000 __init__.py:169(fullmatch)\n     3079    0.001    0.000    0.001    0.000 {method 'fullmatch' of 're.Pattern' objects}\n       12    0.000    0.000    0.001    0.000 search.py:142(source)\n     3087    0.000    0.000    0.001    0.000 __init__.py:280(_compile)\n     4123    0.000    0.000    0.000    0.000 {method 'startswith' of 'str' objects}\n        1    0.000    0.000    0.000    0.000 ontology.py:199(neighbors)\n     3349    0.000    0.000    0.000    0.000 {built-in method builtins.isinstance}\n\n\n"
+    }
+  ]
+}
