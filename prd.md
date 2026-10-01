@@ -347,7 +347,7 @@ Details: [retrieval evaluation](https://github.com/espseongsm/obsi-onto/blob/589
 
 ## 13. Preview and documentation
 
-The preview implementation is available on `codex/initial-preview`. [PR #1](https://github.com/espseongsm/obsi-onto/pull/1) merged the initial MVP into `main`; [PR #2](https://github.com/espseongsm/obsi-onto/pull/2) subsequently merged the preview into `feat/initial-mvp`. At the time of this revision, `main` still contains the earlier MVP, so the README installation command points to the preview branch. This documentation revision does not promote application code into `main`.
+The preview implementation is on `main`. [PR #1](https://github.com/espseongsm/obsi-onto/pull/1) merged the initial MVP into `main`; [PR #2](https://github.com/espseongsm/obsi-onto/pull/2) merged the preview into `feat/initial-mvp` after PR #1 had landed, so it did not reach `main` until [PR #4](https://github.com/espseongsm/obsi-onto/pull/4) merged `codex/initial-preview` into `main`. The README installation command clones the default branch.
 
 Public materials include application code, ontology schemas, fictional examples, tests, technical documents, and a GIF/MP4/poster. The recording uses 80 fictional English notes and source search without an LLM; captions and the closing card were added during editing. It does not demonstrate generated-answer quality.
 

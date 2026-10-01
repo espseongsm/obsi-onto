@@ -16,7 +16,7 @@ LLM API 없이도 근거 검색과 지식 검색을 사용할 수 있습니다. 
 Python/FastAPI, SQLite FTS5, sqlite-vec, RDFLib/SHACL, Three.js로 구성했습니다. 아직 초기 개발 버전이며 검색 품질과 사용성을 계속 검증하고 있습니다. 영상은 개인 기록을 사용하지 않은 가상 노트 데모입니다.
 
 최신 구현과 실행 방법:
-https://github.com/espseongsm/obsi-onto/tree/codex/initial-preview
+https://github.com/espseongsm/obsi-onto
 
 여러분은 자신의 노트에 어떤 질문을 하고 싶으신가요? 사용해 보신 의견과 기여를 환영합니다.
 

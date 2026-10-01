@@ -10,7 +10,7 @@ Your original notes stay read-only. An LLM is optional: evidence search and know
 
 ![Explore the knowledge map and inspect original sources](https://raw.githubusercontent.com/espseongsm/obsi-onto/5897a1846c19d949fada7802115c3f7fd669123a/docs/media/obsi-onto-preview.gif)
 
-[Watch the video](https://github.com/espseongsm/obsi-onto/blob/5897a1846c19d949fada7802115c3f7fd669123a/docs/media/obsi-onto-preview.mp4) · [Preview implementation](https://github.com/espseongsm/obsi-onto/pull/2)
+[Watch the video](https://github.com/espseongsm/obsi-onto/blob/5897a1846c19d949fada7802115c3f7fd669123a/docs/media/obsi-onto-preview.mp4)
 
 The demo uses fictional notes and evidence search without an LLM.
 
@@ -28,7 +28,7 @@ The demo uses fictional notes and evidence search without an LLM.
 You need Git, [uv](https://docs.astral.sh/uv/), and Python 3.12–3.13. The commands below install Python 3.12 through uv. The first dependency or local search-model download needs internet access.
 
 ```sh
-git clone --branch codex/initial-preview https://github.com/espseongsm/obsi-onto.git
+git clone https://github.com/espseongsm/obsi-onto.git
 cd obsi-onto
 uv sync --locked --python 3.12
 uv run main.py

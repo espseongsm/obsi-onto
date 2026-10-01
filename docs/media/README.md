@@ -9,6 +9,6 @@ The footage was captured from the actual app on 2026-09-30, using a separate loc
 
 The sequence shows the whole knowledge map, a question about Project Atlas, the finite evidence camera route, source tiles, an original passage and its line numbers, node connections, and theme changes. Captions and the closing card are added during editing. Scene cuts shorten navigation; the camera route comes from the app.
 
-The latest implementation is on [`codex/initial-preview`](https://github.com/espseongsm/obsi-onto/tree/codex/initial-preview) while the implementation PRs are open. `main` will contain the implementation after review and merge.
+The latest implementation is on [`main`](https://github.com/espseongsm/obsi-onto).
 
 The LinkedIn drafts are prepared for the user to publish. No post has been submitted.

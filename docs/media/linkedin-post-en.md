@@ -16,7 +16,7 @@ Evidence and knowledge search work without an LLM API key. You can optionally co
 Built with Python/FastAPI, SQLite FTS5, sqlite-vec, RDFLib/SHACL, and Three.js. This is an early development preview; retrieval quality and usability are still being evaluated. The video uses fictional notes, not personal records.
 
 Latest implementation and setup:
-https://github.com/espseongsm/obsi-onto/tree/codex/initial-preview
+https://github.com/espseongsm/obsi-onto
 
 What would you like to ask your own notes? Feedback and contributions are welcome.
 
