@@ -3,6 +3,7 @@
 import json
 import secrets
 from contextlib import asynccontextmanager
+from typing import Literal
 
 from fastapi import FastAPI, HTTPException, Query, Request
 from fastapi.responses import FileResponse, JSONResponse
@@ -40,6 +41,14 @@ class ReviewInput(BaseModel):
 class Tuning(BaseModel):
     debounce: float = Field(ge=0.5, le=30)
     reconcile_seconds: float = Field(ge=300, le=86400)
+
+
+class RetentionInput(BaseModel):
+    days: Literal[0, 30, 90, 365]
+
+
+class CleanupInput(BaseModel):
+    days: Literal[30, 90, 365]
 
 
 def create_app(config=None, service=None):
@@ -166,6 +175,14 @@ def create_app(config=None, service=None):
         return svc().store.rows(
             "SELECT id,created_at,question FROM runs ORDER BY created_at DESC LIMIT 50"
         )
+
+    @app.post("/api/history/retention")
+    def retention(data: RetentionInput):
+        return svc().retention.configure(data.days)
+
+    @app.post("/api/history/cleanup")
+    def cleanup_history(data: CleanupInput):
+        return svc().retention.cleanup(data.days)
 
     @app.get("/api/conversations")
     def conversations():

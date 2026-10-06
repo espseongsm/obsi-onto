@@ -11,6 +11,7 @@ import httpx
 import numpy as np
 
 from app.config import LOCAL_MODEL
+from app.model_http import EMBEDDING_RESPONSE_BYTES, GENERATION_RESPONSE_BYTES, post_json
 
 
 def validate_endpoint(url, allow_external):
@@ -51,7 +52,15 @@ class Embedder:
                 "Local embeddings currently support the default multilingual MiniLM model."
             )
         elif self.manifest.exists():
-            self.fingerprint = json.loads(self.manifest.read_text())["fingerprint"]
+            manifest = json.loads(self.manifest.read_text())
+            self.fingerprint = manifest["fingerprint"]
+            weights, separator, saved_version = self.fingerprint.rpartition(":fastembed")
+            runtime_version = version("fastembed")
+            if separator and saved_version != runtime_version:
+                # Retain the cached weights; a new key rebuilds vectors with this runtime.
+                self.fingerprint = f"{weights}:fastembed{runtime_version}"
+                manifest["fingerprint"] = self.fingerprint
+                self.manifest.write_text(json.dumps(manifest))
 
     @property
     def ready(self):
@@ -95,15 +104,15 @@ class Embedder:
             self.calls += len(texts)
             if self.config.embedding_provider == "external":
                 headers = {"Authorization": f"Bearer {os.getenv('OBSI_EMBED_API_KEY', '')}"}
-                response = httpx.post(
+                response = post_json(
                     self.config.embedding_url.rstrip("/") + "/embeddings",
                     json={"model": self.config.embedding_model, "input": texts},
                     headers=headers,
+                    max_bytes=EMBEDDING_RESPONSE_BYTES,
                     timeout=60,
                     follow_redirects=False,
                 )
-                response.raise_for_status()
-                items = sorted(response.json()["data"], key=lambda item: item["index"])
+                items = sorted(response["data"], key=lambda item: item["index"])
                 result = [item["embedding"] for item in items]
             else:
                 self._load()
@@ -244,15 +253,15 @@ class Generator:
         try:
             if not self.enabled:
                 raise ValueError(self.unavailable_reason)
-            response = httpx.post(
+            response = post_json(
                 self.config.generation_url.rstrip("/") + "/chat/completions",
                 json=payload,
                 timeout=60,
                 follow_redirects=False,
                 headers={"Authorization": f"Bearer {os.getenv('OBSI_LLM_API_KEY', '')}"},
+                max_bytes=GENERATION_RESPONSE_BYTES,
             )
-            response.raise_for_status()
-            content = response.json()["choices"][0]["message"]["content"]
+            content = response["choices"][0]["message"]["content"]
             if not isinstance(content, str) or len(content) > 100_000:
                 raise ValueError("Invalid model response size or format.")
             return json.loads(content)

@@ -1,7 +1,6 @@
 import json
 import os
 
-import httpx
 import pytest
 
 import main
@@ -76,30 +75,26 @@ def test_luna_request_uses_english_default_and_keeps_citations(monkeypatch, ques
         assert message["question"] == question and message["evidence"] == evidence
         assert options["headers"]["Authorization"] == "Bearer dummy-test-key"
         assert not options["follow_redirects"]
-        return httpx.Response(
-            200,
-            request=httpx.Request("POST", url),
-            json={
-                "choices": [
-                    {
-                        "message": {
-                            "content": json.dumps(
-                                {
-                                    "sentences": [
-                                        {
-                                            "text": "The demo date is 2026-10-01.",
-                                            "citations": ["S1"],
-                                        }
-                                    ]
-                                }
-                            )
-                        }
+        return {
+            "choices": [
+                {
+                    "message": {
+                        "content": json.dumps(
+                            {
+                                "sentences": [
+                                    {
+                                        "text": "The demo date is 2026-10-01.",
+                                        "citations": ["S1"],
+                                    }
+                                ]
+                            }
+                        )
                     }
-                ]
-            },
-        )
+                }
+            ]
+        }
 
-    monkeypatch.setattr("app.models.httpx.post", post)
+    monkeypatch.setattr("app.models.post_json", post)
     answer = Generator(config).request(question, evidence)
     assert Search.validate_sentences(answer, evidence)[0]["citations"] == ["S1"]
 
@@ -122,23 +117,19 @@ def test_follow_up_context_is_separate_from_current_evidence(monkeypatch):
         instruction = options["json"]["messages"][0]["content"]
         assert "이전 답변은 사실 근거가 아니다" in instruction
         assert "even when the question, evidence, or previous_conversation" in instruction
-        return httpx.Response(
-            200,
-            request=httpx.Request("POST", url),
-            json={
-                "choices": [
-                    {
-                        "message": {
-                            "content": json.dumps(
-                                {"sentences": [{"text": "현재 답변", "citations": ["S1"]}]}
-                            )
-                        }
+        return {
+            "choices": [
+                {
+                    "message": {
+                        "content": json.dumps(
+                            {"sentences": [{"text": "현재 답변", "citations": ["S1"]}]}
+                        )
                     }
-                ]
-            },
-        )
+                }
+            ]
+        }
 
-    monkeypatch.setattr("app.models.httpx.post", post)
+    monkeypatch.setattr("app.models.post_json", post)
     result = Generator(config).request(
         "이어지는 질문", evidence, "answer", {"conversation": previous}
     )

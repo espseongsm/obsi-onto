@@ -1,6 +1,6 @@
 # Obsi Onto — Product Requirements and Technical Specification
 
-Updated: **2026-09-30** · Status: **early development preview**
+Updated: **2026-10-06** · Status: **early development preview**
 
 This document describes the current implementation, configuration, technical boundaries, and validation. The [README](README.md) is the short English guide for installation and everyday use. Historical decisions and completed checks are recorded in the [development log](daily-development-report.md).
 
@@ -16,7 +16,7 @@ Obsi Onto is a local, single-user application for asking questions about an Obsi
 | Traceable answers | Attach valid source IDs to generated sentences and retain paths, lines, hashes, dates, and revisions. |
 | Follow-up conversations | Store chats and retrieve fresh evidence for each question. |
 | Source-based clarification | Show possible conflicts and collect clarification scoped to the current answer. |
-| Knowledge exploration | Show the whole ready-note map, answer evidence, and reviewed relationships in 3D. |
+| Knowledge exploration | Show a bounded ready-note overview, answer evidence, and reviewed relationships in 3D; search omitted records. |
 | Incremental updates | Process file changes and recover missed changes through metadata reconciliation. |
 | English defaults | Use English UI and newly generated prose; preserve original user content and quotations. |
 
@@ -122,6 +122,8 @@ Vector failures preserve text search and retry with backoff from 30 seconds to 3
 
 Changes from one note are coalesced to the newest version. Late work cannot overwrite a newer revision. Pending work is recovered on restart. Full RDF/SHACL regeneration, current-vault graph projection, exact vector-distance calculation, and a single SQLite connection remain implementation constraints.
 
+History retention defaults to **Keep all**. Vault settings can opt into 30/90/365 days or manually delete older history. Automatic cleanup runs at startup and at most daily while running. Remove expired answer/source snapshots and related jobs/events, including recent jobs containing copied expired conversation context. Preserve recent saved answers, note indexes, relationships and downloaded models. Deleted job/run checks prevent late model replies from republishing removed history. Checkpoint/VACUUM reclaims SQLite space; failures surface a safe storage warning and support retry. Show database/WAL and downloaded-model usage separately. Backups and provider-held data are outside local cleanup.
+
 App data includes duplicated passages, embeddings, conversations, jobs, reviews, and answer snapshots. Deleting local index and history removes that app data, including pending jobs and clarifications; it leaves original notes and downloaded public model files intact. It is not forensic secure erasure.
 
 ## 5. Retrieval and answer verification
@@ -193,9 +195,9 @@ Source/citation selection opens the shared original-passage dialog with path, li
 
 ### Overview, snapshots, and camera
 
-The chat overview includes all indexed, ready notes and connected topics/tags with no note-count cap. Fold actual passage links/properties into note-level connections, preserving provenance counts. Excluded and pending notes are absent.
+The chat overview projects indexed, ready notes and connected topics/tags within a 240-node, 480-link display budget. Return exact total/omitted node counts; link totals and omissions cover distinct folded connections among displayed nodes. Fold actual passage links/properties into note-level connections, preserving provenance counts. Excluded and pending notes are absent.
 
-Independent detailed knowledge search and individual answer snapshots are limited to 80 nodes and 200 links. Default detailed search starts from up to 12 path-ordered notes and nearby two-hop connections; report shown and omitted counts. The combined chat overview/evidence map can exceed those limits.
+Independent detailed knowledge search and individual answer snapshots are limited to 80 nodes and 200 links. Default detailed search starts from up to 12 path-ordered notes and nearby two-hop connections; report shown and omitted counts. The combined chat overview/evidence map is capped at 240 nodes and 480 links, prioritizing answer evidence. Browser guards cap older saved payloads before classification, merging, layout and WebGL allocation. Search omitted records or explore a selected note through existing detailed search. These budgets do not bound the underlying RDF index.
 
 Answer evidence retains its saved revision. Do not attach current connections to historical evidence when versions differ. Preserve existing node positions, camera, and selection while composing the map. Restoring a conversation starts at the whole-vault view.
 
@@ -233,6 +235,8 @@ Use WebGL 2 for 3D with a node selector/source-inspector fallback. Automatic rot
 | `OBSI_ALLOW_EXTERNAL_GENERATION=1` | Permit external questions, retrieved/supplemental evidence, clarification, and bounded conversation context |
 | `OBSI_ALLOW_EXTERNAL_SUGGESTIONS=1` | Separate permission to transmit sampled content for automatic suggestions; off by default |
 
+The question screen and Vault settings show active external recipients and transmitted input scopes for embeddings, answers/relationship checks, and suggestions separately. Recipient metadata contains only scheme, hostname and optional port; never expose URL credentials, path/query values or API keys. Local processing is classified by the actual loopback hostname, independently of external permission flags.
+
 The provider must support chat completions and JSON responses. Use HTTPS for external providers and include `/v1` when required. The bundled example model ID is not a promise of provider availability.
 
 `.env.example` uses `OBSI_LLM_URL=${OPENAI_BASE_URL}` and `OBSI_LLM_API_KEY=${OPENAI_API_KEY}`. Either keep these references and fill `OPENAI_*`, or replace them with direct `OBSI_LLM_*` values. Shell-only `OPENAI_*` values are not automatically mapped if those references are removed. Edit existing entries rather than adding duplicates.
@@ -269,7 +273,7 @@ Get a token from `GET /api/session` and send `X-Obsi-Token` on every other API, 
 
 | Endpoint | Contract |
 |---|---|
-| `GET /api/status` | Vault, indexing, suggestions, and secret-free generation availability/reason |
+| `GET /api/status` | Vault/indexing, model availability, sanitized recipients/data scopes, retention counts and storage usage |
 | `POST /api/vault`, `POST /api/vault/pick-folder` | Configure the vault or select a macOS folder |
 | `POST /api/query-jobs` | Submit question/filters and unique request ID; return 202 and persisted job state |
 | `GET /api/query-jobs` | List active or awaiting-user jobs |
@@ -281,6 +285,8 @@ Get a token from `GET /api/session` and send `X-Obsi-Token` on every other API, 
 | `GET /api/conversations`, `GET /api/conversations/{id}` | List or restore saved chats |
 | `GET /api/graph?overview=true` | Ready-note overview with connected topics and tags |
 | `GET /api/graph?q=...` | Bounded detailed graph search |
+| `POST /api/history/retention` | Save keep-all (0) or 30/90/365 days; opting in immediately removes expired history |
+| `POST /api/history/cleanup` | Delete records older than 30/90/365 days; return removed counts and reclaimed space |
 
 Question requests use `question`, optional `conversation_id`, `domain`, `start`/`end` recording dates, `mode`, `generate`, and `request_id`. Strict models reject unknown fields, blank questions, invalid dates, or reversed date ranges. Request IDs are 16–80 characters using letters, digits, underscore, or hyphen. An `explain` choice requires nonblank explanation text.
 
@@ -291,7 +297,9 @@ Question requests use `question`, optional `conversation_id`, `domain`, `start`/
 | Note / individual line | 8MiB / 16,384 characters |
 | Frontmatter | 64KiB; depth 20; 4,000 nodes; YAML aliases unsupported |
 | Generation request JSON | 256,000 bytes |
-| Returned model content | 100,000 characters; checked after receipt, not a streaming HTTP-body limit |
+| Received model HTTP response | Generation 1,000,000 decoded bytes; embeddings 8,000,000 decoded bytes; reject excess while streaming, including bounded gzip/deflate decompression |
+| Returned model content | 100,000 characters after HTTP-body validation |
+| Overview / combined browser graph | 240 nodes / 480 links; tour input at most 240 IDs |
 | Generated answer | At most 40 sentences; each at most 5,000 characters with 1–24 citations |
 | Generation concurrency | Two slots; 60-second request timeout |
 
@@ -319,7 +327,10 @@ Only one vault is connected at a time. Changing folders requires deleting the pr
 uv run ruff check .
 uv run ruff format --check .
 uv run pytest -q
-node --test tests/*.test.cjs
+npm ci --ignore-scripts
+npm run test:graph
+npx playwright install --only-shell chromium
+npm run test:browser
 ```
 
 Check syntax for changed browser/build JavaScript with `node --check path/to/file.js`. Rebuild the locally bundled renderer only when necessary:
@@ -329,9 +340,13 @@ npm ci --ignore-scripts --no-audit --no-fund
 npm run build:graph
 ```
 
+`.github/workflows/security.yml` runs regression/browser tests, locked Python and JavaScript vulnerability audits, and Gitleaks secret detection on pull requests, main pushes, manual runs and weekly. PR/push secret checks scan the event's commit range; weekly/manual checks scan the full reachable history. Actions are pinned to verified commits, Gitleaks is fixed at 8.30.1, checkout credentials are not persisted, and permissions are read-only. Secret findings do not create PR comments or upload reports. Browser fixtures use only a temporary fictional vault, no `.env`, and no model API requests.
+
+The dependency audit identified affected Pillow 11.3.0; update to Pillow 12.3.0 with FastEmbed 0.8.1, which supports Pillow 12. Cached weights are reused; runtime-version fingerprint changes rebuild vector caches without downloading weights. See the [Pillow 12.3.0 security fixes](https://pillow.readthedocs.io/en/stable/releasenotes/12.3.0.html).
+
 Rerun retrieval evaluation with `uv run python scripts/evaluate.py` after preparing the local embedding model. The script does not load `.env`; pass a custom `OBSI_DATA_DIR` in the shell. It uses five fictional notes and 20 Korean questions in a temporary database, forces local embeddings and no generation, and writes `docs/evaluation.json`.
 
-The latest implementation checks passed **102 Python tests** and **24 JavaScript tests**, plus Ruff, JavaScript syntax, and diff whitespace checks. Tests use fictional vaults and model doubles, including macOS file notifications. Restricted environments can block watcher notifications. Existing RDFLib and test-client deprecation warnings remain.
+The latest implementation checks passed **136 Python tests**, **28 JavaScript tests**, and **4 Chromium browser tests**, plus Ruff, JavaScript syntax, and diff whitespace checks. Locked Python packages (53 registry package/version pairs) passed the OSV audit; npm audit reported zero known vulnerabilities. Redacted Gitleaks scans passed for reachable Git history and the proposed source tree. Tests use fictional vaults and model doubles, including macOS file notifications. Restricted environments can block watcher notifications. Existing RDFLib and test-client deprecation warnings remain. GitHub-hosted checks are additional to this local verification; see the pull request checks for their latest status.
 
 | Existing development measurement | Result and scope |
 |---|---|

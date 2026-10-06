@@ -3,9 +3,11 @@
   "private": true,
   "scripts": {
     "build:graph": "node scripts/build-graph.mjs",
-    "test:graph": "node --test tests/graph-layout.test.cjs"
+    "test:graph": "node --test tests/*.test.cjs",
+    "test:browser": "playwright test"
   },
   "devDependencies": {
+    "@playwright/test": "1.63.0",
     "esbuild": "0.25.10",
     "three": "0.180.0"
   }

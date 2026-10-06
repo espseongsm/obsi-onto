@@ -150,6 +150,12 @@ class Store:
         self.put("vector_dimensions", self.dimensions)
         self.put("schema_version", 2)
 
+    def compact(self):
+        with self.lock:
+            self.db.execute("PRAGMA wal_checkpoint(TRUNCATE)")
+            self.db.execute("VACUUM")
+            self.db.execute("PRAGMA wal_checkpoint(TRUNCATE)")
+
     def close(self):
         with self.lock:
             self.db.close()

@@ -7,17 +7,23 @@ from rdflib import RDF, RDFS
 from app.graph_view import node_id
 from app.ontology import ONTO, N
 
+MAX_NODES = 240
+MAX_EDGES = 480
+
 
 def graph_overview(ontology, root):
     with ontology.store.lock:
         ontology.refresh()
         graph, store = ontology.graph, ontology.store
-        notes = store.rows("SELECT * FROM notes WHERE state='ready' ORDER BY path")
+        total_notes = store.rows("SELECT count(*) n FROM notes WHERE state='ready'")[0]["n"]
+        notes = store.rows(
+            "SELECT id,path,title,revision,record_date,hash FROM notes "
+            "WHERE state='ready' ORDER BY path LIMIT ?",
+            (MAX_NODES,),
+        )
         nodes = {}
-        owners = {}
         for note in notes:
             key = "note/" + note["id"]
-            owners[N[key]] = key
             nodes[key] = {
                 "id": key,
                 "kind": "Note",
@@ -33,41 +39,29 @@ def graph_overview(ontology, root):
                 nodes[key]["uri"] = "obsidian://open?" + urlencode(
                     {"path": str(root / note["path"])}, quote_via=quote
                 )
-        for section in store.rows(
-            "SELECT s.id,s.note_id FROM sections s JOIN notes n ON n.id=s.note_id "
-            "WHERE n.state='ready' AND s.revision=n.revision"
+        note_ids = set(nodes)
+
+        def owner(source):
+            if source is None:
+                return None
+            if (source, RDF.type, ONTO.Note) in graph:
+                return node_id(source)
+            section = source
+            if (source, RDF.type, ONTO.Section) not in graph:
+                section = graph.value(source, ONTO.source)
+            note = graph.value(section, ONTO.note) if section else None
+            return node_id(note) if note else None
+
+        total_nodes = total_notes
+        for predicate, kind in (
+            (ONTO.taggedWith, "Tag"),
+            (ONTO.about, "Topic"),
         ):
-            owners[N[f"section/{section['id']}"]] = "note/" + section["note_id"]
-        for kind in (ONTO.Claim, ONTO.Activity):
-            for subject in graph.subjects(RDF.type, kind):
-                owner = owners.get(graph.value(subject, ONTO.source))
-                if owner:
-                    owners[subject] = owner
-
-        edges = {}
-
-        def connect(source, target, kind, label, origin):
-            if not source or not target or source == target:
-                return
-            key = (source, target, kind, origin)
-            if key not in edges:
-                edges[key] = {
-                    "source": source,
-                    "target": target,
-                    "kind": kind,
-                    "label": label,
-                    "origin": origin,
-                    "support_count": 0,
-                }
-            edges[key]["support_count"] += 1
-
-        for predicate, kind, label, origin in (
-            (ONTO.taggedWith, "Tag", "태그", "explicit_tag"),
-            (ONTO.about, "Topic", "주제", "frontmatter"),
-        ):
-            for source, target in graph.subject_objects(predicate):
-                owner = owners.get(source)
-                if not owner:
+            for target in graph.subjects(RDF.type, ONTO[kind]):
+                total_nodes += 1
+                if len(nodes) >= MAX_NODES or not any(
+                    owner(source) in note_ids for source in graph.subjects(predicate, target)
+                ):
                     continue
                 key = node_id(target)
                 nodes[key] = {
@@ -77,25 +71,65 @@ def graph_overview(ontology, root):
                     "matched": False,
                     "evidence": False,
                 }
-                edge_origin = (
-                    "user_review" if node_id(source).startswith(("claim/", "activity/")) else origin
-                )
-                connect(owner, key, node_id(predicate).rsplit("/", 1)[-1], label, edge_origin)
-        for relation in graph.subjects(RDF.type, ONTO.Relation):
-            source = owners.get(graph.value(relation, ONTO.source))
-            target = graph.value(relation, ONTO.targetSection) or graph.value(relation, ONTO.target)
-            connect(source, owners.get(target), "linksTo", "명시 링크", "explicit_link")
+        edges, total_edges = [], 0
+        # Fold one selected note at a time. Its possible targets are bounded by the node budget;
+        # do not materialize every vault section, owner, or edge merely to discard it later.
+        for source in sorted(note_ids):
+            outgoing = {}
+
+            def connect(target, kind, label, origin, source=source, outgoing=outgoing):
+                if target not in nodes or source == target:
+                    return
+                key = (source, target, kind, origin)
+                if key not in outgoing:
+                    outgoing[key] = {
+                        "source": source,
+                        "target": target,
+                        "kind": kind,
+                        "label": label,
+                        "origin": origin,
+                        "support_count": 0,
+                    }
+                outgoing[key]["support_count"] += 1
+
+            for section in graph.objects(N[source], ONTO.contains):
+                for predicate, label, origin in (
+                    (ONTO.taggedWith, "태그", "explicit_tag"),
+                    (ONTO.about, "주제", "frontmatter"),
+                ):
+                    for target in graph.objects(section, predicate):
+                        connect(
+                            node_id(target), node_id(predicate).rsplit("/", 1)[-1], label, origin
+                        )
+                for record in graph.subjects(ONTO.source, section):
+                    if (record, RDF.type, ONTO.Relation) in graph:
+                        target = graph.value(record, ONTO.targetSection) or graph.value(
+                            record, ONTO.target
+                        )
+                        connect(owner(target), "linksTo", "명시 링크", "explicit_link")
+                    elif any(
+                        (record, RDF.type, kind) in graph for kind in (ONTO.Claim, ONTO.Activity)
+                    ):
+                        for target in graph.objects(record, ONTO.about):
+                            connect(node_id(target), "about", "주제", "user_review")
+            total_edges += len(outgoing)
+            for key in sorted(outgoing):
+                if len(edges) < MAX_EDGES:
+                    edges.append(outgoing[key])
         return {
             "nodes": list(nodes.values()),
-            "edges": [edges[key] for key in sorted(edges)],
+            "edges": edges,
             "generation": ontology.version,
             "scope": "overview",
             "projection": "notes",
             "query": "",
-            "total_nodes": len(nodes),
-            "total_notes": len(notes),
+            "total_nodes": total_nodes,
+            "total_notes": total_notes,
+            "total_edges": total_edges,
+            "edge_count_scope": "displayed_nodes",
             "matched_nodes": 0,
-            "omitted_nodes": 0,
-            "omitted_edges": 0,
-            "limit": None,
+            "omitted_nodes": total_nodes - len(nodes),
+            "omitted_edges": total_edges - len(edges),
+            "limit": MAX_NODES,
+            "edge_limit": MAX_EDGES,
         }

@@ -67,7 +67,7 @@ New generated answers default to English even when you ask in another language. 
 
 ### Explore the knowledge graph
 
-The map starts with the whole vault. When you ask a question, the camera follows relevant evidence and ends with that answer's evidence in view.
+The map starts with a vault overview, displaying up to 240 nodes and 480 connections. Use **Search omitted records** or **Explore this note** to inspect records beyond the displayed map. When you ask a question, the camera follows relevant evidence and ends with that answer's evidence in view.
 
 | Action | Control |
 |---|---|
@@ -115,6 +115,8 @@ If the model cannot connect, the app continues in evidence search mode. Local mo
 ## Notes and troubleshooting
 
 Your vault is read-only. The app saves its index and conversations locally and updates the index as notes change. Saved answers preserve their original evidence, so they may differ from the current note.
+
+**Vault settings → History & storage** shows storage use and optional 30/90/365-day retention. The default keeps all history. Deleting older history removes saved answers and source passages while preserving recent answers and your notes/index. **Models & data** and the question screen show external recipients and the data sent to them.
 
 Only one vault can be connected at a time. To switch from sample notes or another vault, use **Vault settings → Delete local index and history**, then connect the new folder. This removes app history and the index, so save anything you want to retain first; it does not delete your original notes.
 

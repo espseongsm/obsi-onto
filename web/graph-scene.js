@@ -4,6 +4,7 @@ const GraphScene = (() => {
   const defaultCategories = {ai: '#b38aff', data: '#13d9ed', engineering: '#559cff', work: '#ffa64c', investing: '#f5d94f',
     economy: '#ff7485', life: '#6cdaa2', knowledge: '#eb87df', journal: '#dcaf82', other: '#a6b4ca'};
   function mount(stage, data, onSelect) {
+    data = GraphLayout.bounded(data);
     const T = ObsiThree, reducedMotion = matchMedia('(prefers-reduced-motion: reduce)');
     function readPalette() {
       const style = getComputedStyle(stage), value = (name, fallback) => style.getPropertyValue(name).trim() || fallback;

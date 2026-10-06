@@ -11,13 +11,16 @@ dependencies = [
   "rdflib>=7.1,<8",
   "pyshacl>=0.30,<1",
   "watchdog>=6,<8",
-  "fastembed>=0.7,<0.8",
+  "fastembed>=0.8.1,<0.9",
   "httpx>=0.28,<1",
   "python-dotenv>=1,<2",
 ]
 
 [dependency-groups]
 dev = ["pytest>=8,<10", "ruff>=0.11,<1"]
+
+[tool.uv]
+constraint-dependencies = ["pillow>=12.3.0,<13"]
 
 [tool.ruff]
 line-length = 100

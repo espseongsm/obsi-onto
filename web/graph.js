@@ -14,6 +14,7 @@ const GraphView = (() => {
     disposeMounted(root);
   }
   function watch(container, data, onSelect = () => {}) {
+    data = GraphLayout.bounded(data);
     dispose(container);
     const disclosure = container.closest('details');
     let near = false, mounted, snapshot = data.viewState, selected = '', disposed = false;
@@ -51,7 +52,7 @@ const GraphView = (() => {
     for (const [container, scene] of views) scene?.visible(!document.hidden && !container.closest('[hidden]'));
   }
   function mount(container, data, onSelect = () => {}) {
-    data = GraphCategories.decorate(data);
+    data = GraphCategories.decorate(GraphLayout.bounded(data));
     disposeMounted(container); container.replaceChildren(); container.classList.add('graph-view');
     container.classList.remove('has-selection');
     const nodes = data.nodes, edges = data.edges, byId = new Map(nodes.map(node => [node.id, node]));
@@ -101,8 +102,21 @@ const GraphView = (() => {
     };
     legend.append(guide);
     container.append(body, legend);
-    if (data.omitted_nodes || data.omitted_edges) container.append(el('p',
-      `Showing ${nodes.length} of ${data.total_nodes} nodes · up to ${data.limit} nodes within 2 hops${data.omitted_edges ? ` · ${data.omitted_edges} links omitted` : ''}`, 'graph-limit'));
+    if (data.omitted_nodes || data.omitted_edges || data.background_omitted_nodes || data.background_omitted_edges || data.evidence_omitted_nodes) {
+      const message = `Showing ${nodes.length} of ${data.total_nodes || nodes.length} nodes` +
+        (data.omitted_nodes ? ` · ${data.omitted_nodes} nodes omitted` : '') +
+        (data.omitted_edges ? ` · ${data.omitted_edges} links omitted${data.edge_count_scope === 'displayed_nodes' ? ' between shown nodes' : ''}` : '') +
+        (data.background_omitted_nodes ? ` · vault overview omitted ${data.background_omitted_nodes} nodes` : '') +
+        (data.background_omitted_edges ? ` · vault overview omitted ${data.background_omitted_edges} links` : '') +
+        (data.evidence_omitted_nodes ? ` · evidence view omitted ${data.evidence_omitted_nodes} nodes` : '');
+      const notice = el('p', message, 'graph-limit'), search = el('button', 'Search omitted records');
+      search.type = 'button'; search.onclick = () => searchRecords(); notice.append(search); container.append(notice);
+    }
+    function searchRecords(query = '') {
+      const input = document.querySelector('#graph-query');
+      if (!input) return;
+      input.value = query.slice(0, 200); page('graph'); input.focus();
+    }
     let scene;
     try { scene = GraphScene.mount(stage, data, select); }
     catch (error) {
@@ -189,6 +203,8 @@ const GraphView = (() => {
         }
         inspector.append(relationList);
         if (selected.uri) { const open = el('a', 'Open source in Obsidian ↗'); open.href = selected.uri; inspector.append(open); }
+        const explore = el('button', selected.kind === 'Note' ? 'Explore this note' : 'Search related records');
+        explore.type = 'button'; explore.onclick = () => searchRecords(selected.path || selected.label); inspector.append(explore);
         if (data.scope === 'answer' && selected.citation) {
           const source = el('a', `View source ${selected.citation} ↓`); source.href = '#' + (data.sourcePrefix || 'source-') + selected.citation; inspector.append(source);
         }

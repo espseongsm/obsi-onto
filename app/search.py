@@ -306,6 +306,8 @@ class Search:
             evidence, _ = self.verify(run["evidence"])
         output = self.generator.request(run["question"], self.model_evidence(evidence), "extract")
         with service.operation, self.store.lock:
+            if not self.store.rows("SELECT id FROM runs WHERE id=?", (run_id,)):
+                raise ValueError("The saved answer was deleted. Ask again for new suggestions.")
             if epoch != self.store.get("vault_epoch"):
                 raise ValueError(
                     "The vault settings changed, so the relationship suggestions were discarded."
