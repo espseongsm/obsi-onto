@@ -2,6 +2,30 @@ const test = require('node:test');
 const assert = require('node:assert/strict');
 const {positions, focus} = require('../web/graph-layout.js');
 
+test('graph projection caps oversized saved payloads without traversing edges beyond the budget', () => {
+  const {bounded, MAX_NODES, MAX_EDGES} = require('../web/graph-layout.js');
+  const nodes = Array.from({length: 2000}, (_, i) => ({id: String(i)}));
+  const edges = Array.from({length: 5000}, () => ({source: '0', target: '1'}));
+  Object.defineProperty(edges, MAX_EDGES, {get() { throw new Error('unbounded edge traversal'); }});
+  const result = bounded({nodes, edges, omitted_nodes: 10, omitted_edges: 20, journeyIds: nodes.map(n => n.id)});
+  assert.equal(result.nodes.length, MAX_NODES); assert.equal(result.edges.length, MAX_EDGES);
+  assert.equal(result.omitted_nodes, 1770); assert.equal(result.total_nodes, 2010);
+  assert.equal(result.omitted_edges, 4540); assert.equal(result.journeyIds.length, MAX_NODES);
+  assert.equal(result.edges[0], edges[0]); assert.equal(nodes.length, 2000);
+  const small = {nodes: nodes.slice(0, 4), edges: edges.slice(0, 1)};
+  assert.equal(bounded(small), small);
+  const tour = bounded({...small, journeyIds: Array.from({length: 5000}, () => '0')});
+  assert.equal(tour.journeyIds.length, MAX_NODES);
+  assert.equal(tour.omitted_nodes, 0); assert.equal(tour.omitted_edges, 0);
+});
+
+test('truncation drops connections whose endpoint is outside the displayed projection', () => {
+  const {bounded, MAX_NODES} = require('../web/graph-layout.js');
+  const nodes = Array.from({length: MAX_NODES + 1}, (_, i) => ({id: String(i)}));
+  const result = bounded({nodes, edges: [{source: '0', target: String(MAX_NODES)}]});
+  assert.equal(result.edges.length, 0); assert.equal(result.omitted_edges, 1);
+});
+
 test('empty and isolated records have usable coordinates', () => {
   assert.equal(positions([], []).size, 0);
   assert.deepEqual(positions([{id: 'alone'}], []).get('alone'), {x: 0, y: 0, z: 0});

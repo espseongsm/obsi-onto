@@ -2,6 +2,7 @@ const {test} = require('node:test');
 const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const vm = require('node:vm');
+const GraphLayout = require('../web/graph-layout.js');
 
 const node = (id, revision = 1) => ({id, kind: 'Note', path: id + '.md', revision, label: id});
 const edge = (source, target) => ({source, target, kind: 'linksTo', origin: 'explicit_link'});
@@ -16,7 +17,7 @@ function element() {
 function harness(get = async () => vault) {
   const elements = new Map(), mounts = [], flights = [], snapshots = [];
   const $ = selector => { if (!elements.has(selector)) elements.set(selector, element()); return elements.get(selector); };
-  const context = vm.createContext({$, el: element, api: get, document: {querySelector: $},
+  const context = vm.createContext({$, el: element, api: get, GraphLayout, document: {querySelector: $},
     SourceCards: {highlight() {}}, matchMedia: () => ({matches: false}),
     GraphView: {dispose() {}, mount(container, data) {
       const snapshot = {positions: {a: {x: mounts.length, y: 0, z: 0}}, camera: {x: 1}, target: {x: 0}};
@@ -85,6 +86,24 @@ test('historical evidence wins its node id without borrowing current-revision ed
   assert.equal(merged.nodes.find(n => n.id === 'a').context_only, false);
   assert.equal(merged.nodes.find(n => n.id === 'b').context_only, true);
   assert.equal(merged.edges.length, 0);
+});
+
+test('oversized saved evidence and background are bounded before merging while evidence keeps priority', async () => {
+  const overview = {scope: 'overview', nodes: Array.from({length: 2000}, (_, i) => node('n' + i)), edges: [], omitted_nodes: 50};
+  const h = harness(async () => overview); h.graph.sync({vault: '/vault'}); await tick();
+  assert.equal(h.mounts[0].nodes.length, GraphLayout.MAX_NODES);
+  assert.equal(h.mounts[0].omitted_nodes, 1810);
+  const evidence = {scope: 'answer', nodes: Array.from({length: 600}, (_, i) => ({...node('e' + i), citation: 'S' + i})),
+    edges: Array.from({length: 1500}, (_, i) => edge('e' + i % 240, 'e' + (i % 240 + 1 + Math.floor(i / 240)) % 240))};
+  h.graph.showAnswer({id: 'saved', question: 'saved?', graph: evidence}, {animate: false});
+  const displayed = h.mounts.at(-1);
+  assert.equal(displayed.nodes.length, GraphLayout.MAX_NODES);
+  assert.equal(displayed.edges.length, GraphLayout.MAX_EDGES);
+  assert.ok(displayed.nodes.every(n => n.citation && !n.context_only));
+  assert.equal(displayed.background_omitted_nodes, 1810);
+  assert.equal(displayed.evidence_omitted_nodes, 360);
+  assert.equal(displayed.omitted_nodes, 240);
+  assert.ok(displayed.journeyIds.length <= GraphLayout.MAX_NODES);
 });
 
 test('a late overview from a previously connected vault never replaces the new map', async () => {

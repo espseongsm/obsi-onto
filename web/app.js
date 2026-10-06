@@ -117,12 +117,7 @@ function renderStatus(data) {
     el('p', `Index location: ${data.data_dir}`, 'hint'));
   if (!data.generation_enabled) $('#model-info').append(el('p', uiText(data.generation_reason) || 'Evidence and knowledge search work without an LLM.', 'hint'));
   $('#model-info').append(el('p', 'Follow “LLM API key setup” in the README. Set the endpoint, API key and model in .env, then restart the server.', 'hint'));
-  if (data.generation_enabled && data.generation_external) {
-    $('#model-info').append(el('p', 'Conflict checks and answer generation send your question, retrieved evidence, clarifications and up to 20 recent conversation turns to the external API.', 'hint'));
-    $('#model-info').append(el('p', data.suggestions_external ?
-      'Suggested questions: external API enabled. Titles, record dates and excerpts from up to 24 non-excluded notes are sent.' :
-      'Suggested questions: external API disabled. Basic suggestions use note titles. Generating suggestions from note content requires separate permission.', 'hint'));
-  }
+  PrivacyUI.render(data);
   $('#prepare-model').textContent = data.embedding_ready ? 'Local model ready' : 'Prepare local semantic model';
   $('#prepare-model').disabled = data.embedding_ready || data.task === 'Preparing local model';
   if (!data.vault && (first || disconnected)) requireVault();
@@ -296,6 +291,7 @@ $('#tuning-form').onsubmit = event => {
     await api('/settings', 'POST', {debounce: Number($('#debounce').value), reconcile_seconds: Number($('#interval').value) * 60}); toast('Refresh settings saved.');
   });
 };
+PrivacyUI.bind();
 $('#delete-data').onclick = event => action(event.currentTarget, async () => {
   if (!confirm('Delete the local index, conversations and relationship reviews? Your original notes will be preserved.')) return;
   await api('/data', 'DELETE'); ChatUI.fresh(); GraphView.dispose($('#vault-graph'));

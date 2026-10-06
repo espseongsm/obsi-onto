@@ -15,9 +15,11 @@ from app.markdown import digest
 from app.models import Embedder, Generator
 from app.ontology import Ontology
 from app.query_jobs import QueryJobs
+from app.retention import HistoryRetention
 from app.search import Search
 from app.storage import Store
 from app.suggestions import Suggestions
+from app.transmission import transmission_status
 
 
 class Events(FileSystemEventHandler):
@@ -93,6 +95,7 @@ class Service:
         self.suggestion_future = None
         self.jobs = QueryJobs(self)
         self.search.jobs = self.jobs
+        self.retention = HistoryRetention(self)
         self.pending, self.scan_due, self.deep = {}, None, False
         self.prepare_model = False
         self.stopping = False
@@ -107,6 +110,7 @@ class Service:
         )
 
     def start(self):
+        self.retention.cleanup_if_due()
         if self.indexer.root:
             cached = self.store.get("suggestions", {})
             if cached.get("state") in {None, "generating"} or (
@@ -167,6 +171,7 @@ class Service:
     def run(self):
         last_wall = time.time()
         while True:
+            self.retention.cleanup_if_due()
             with self.condition:
                 if self.stopping:
                     return
@@ -284,6 +289,9 @@ class Service:
                 and all(e.is_alive() for e in self.observer.emitters)
             ),
             "data_dir": str(self.config.data_dir),
+            "history": self.retention.history(),
+            "storage_usage": self.retention.usage(),
+            "transmission": transmission_status(self.config, self.generator.enabled),
             "validation": self.ontology.validation,
         }
 

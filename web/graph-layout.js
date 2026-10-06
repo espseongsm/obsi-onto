@@ -1,5 +1,18 @@
 /* Deterministic spatial layout. Coordinates describe presentation, not semantic distance. */
 const GraphLayout = (() => {
+  const MAX_NODES = 240, MAX_EDGES = 480;
+  function bounded(data) {
+    if (data.nodes.length <= MAX_NODES && data.edges.length <= MAX_EDGES &&
+        !(data.journeyIds?.length > MAX_NODES)) return data;
+    const nodes = data.nodes.slice(0, MAX_NODES), ids = new Set(nodes.map(node => node.id));
+    const edges = data.edges.slice(0, MAX_EDGES).filter(edge => ids.has(edge.source) && ids.has(edge.target));
+    const omittedNodes = (data.omitted_nodes || 0) + data.nodes.length - nodes.length;
+    return {...data, nodes, edges, journeyIds: data.journeyIds?.slice(0, MAX_NODES),
+      total_nodes: Math.max(data.total_nodes || 0, nodes.length + omittedNodes), omitted_nodes: omittedNodes,
+      omitted_edges: (data.omitted_edges || 0) + data.edges.length - edges.length,
+      edge_count_scope: data.nodes.length > MAX_NODES ? undefined : data.edge_count_scope,
+      limit: MAX_NODES, edge_limit: MAX_EDGES};
+  }
   function hashId(id) {
     let hash = 2166136261;
     for (const char of id) hash = Math.imul(hash ^ char.charCodeAt(0), 16777619);
@@ -72,6 +85,6 @@ const GraphLayout = (() => {
     }
     return {selected, seeds, neighbors};
   }
-  return {positions, restore, focus};
+  return {bounded, MAX_NODES, MAX_EDGES, positions, restore, focus};
 })();
 if (typeof module !== 'undefined') module.exports = GraphLayout;

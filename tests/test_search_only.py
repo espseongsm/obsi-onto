@@ -29,7 +29,7 @@ def test_unavailable_llm_starts_and_searches_without_model_calls(
 ):
     monkeypatch.setenv("OBSI_LLM_API_KEY", key)
     monkeypatch.setattr(
-        "app.models.httpx.post", lambda *a, **kw: pytest.fail("LLM must not be called")
+        "app.models.post_json", lambda *a, **kw: pytest.fail("LLM must not be called")
     )
     service = Service(
         Config(
@@ -70,13 +70,9 @@ def test_local_llm_without_api_key_is_supported(monkeypatch):
 
     def post(url, **options):
         assert options["headers"]["Authorization"] == "Bearer "
-        return httpx.Response(
-            200,
-            request=httpx.Request("POST", url),
-            json={"choices": [{"message": {"content": '{"sentences": []}'}}]},
-        )
+        return {"choices": [{"message": {"content": '{"sentences": []}'}}]}
 
-    monkeypatch.setattr("app.models.httpx.post", post)
+    monkeypatch.setattr("app.models.post_json", post)
     assert generator.enabled and generator.unavailable_reason is None
     assert generator.request("질문", []) == {"sentences": []}
 
@@ -98,14 +94,15 @@ def test_runtime_model_failure_preserves_search_and_stops_retries(
         if failure == "network":
             raise httpx.ConnectError("dummy-private-key https://private-address.test")
         if failure == "invalid_response":
-            return httpx.Response(200, request=httpx.Request("POST", url), json={"choices": []})
-        return httpx.Response(
-            401,
-            request=httpx.Request("POST", url),
-            text="dummy-private-key https://private-address.test",
+            return {"choices": []}
+        request = httpx.Request("POST", url)
+        raise httpx.HTTPStatusError(
+            "dummy-private-key https://private-address.test",
+            request=request,
+            response=httpx.Response(401, request=request),
         )
 
-    monkeypatch.setattr("app.models.httpx.post", post)
+    monkeypatch.setattr("app.models.post_json", post)
     write(service, "프로젝트.md", "프로젝트 도입 근거를 검토한다. #업무")
     if source_count == 2:
         write(service, "검토.md", "프로젝트 검색 기능을 확인한다. #업무")

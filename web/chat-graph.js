@@ -5,23 +5,33 @@ const ChatGraph = (() => {
   const panel = () => $('#chat-graph-panel');
   const canvas = () => $('#dock-graph');
   const available = () => !panel().hidden;
-  const graphIds = graph => graph.nodes.filter(n => n.citation).concat(graph.nodes.filter(n => !n.citation)).map(n => n.id);
+  const graphIds = graph => {
+    const {nodes} = GraphLayout.bounded(graph);
+    return nodes.filter(n => n.citation).concat(nodes.filter(n => !n.citation)).map(n => n.id);
+  };
 
   function combined(graph) {
-    const nodes = new Map((overviewData?.nodes || []).map(node => [node.id, {...node, context_only: true, matched: false}]));
+    graph = GraphLayout.bounded(graph);
+    const background = overviewData?.nodes || [], byId = new Map(background.map(node => [node.id, node]));
+    const nodes = new Map();
     const changed = new Set();
     for (const node of graph.nodes) {
-      const current = nodes.get(node.id);
+      const current = byId.get(node.id);
       if (current?.path && (current.path !== node.path || current.revision !== node.revision)) changed.add(node.id);
       nodes.set(node.id, {...node, context_only: false});
     }
+    for (const node of background) if (!nodes.has(node.id)) nodes.set(node.id, {...node, context_only: true, matched: false});
     const edges = new Map();
-    for (const edge of overviewData?.edges || []) if (!changed.has(edge.source) && !changed.has(edge.target)) {
-      edges.set(JSON.stringify([edge.source, edge.target, edge.kind, edge.origin]), edge);
-    }
     for (const edge of graph.edges) edges.set(JSON.stringify([edge.source, edge.target, edge.kind, edge.origin]), edge);
-    return {...graph, nodes: [...nodes.values()], edges: [...edges.values()], journeyIds: graphIds(graph),
-      context: true, total_nodes: nodes.size, omitted_nodes: 0, omitted_edges: 0, limit: null};
+    for (const edge of overviewData?.edges || []) if (!changed.has(edge.source) && !changed.has(edge.target)) {
+      const key = JSON.stringify([edge.source, edge.target, edge.kind, edge.origin]);
+      if (!edges.has(key)) edges.set(key, edge);
+    }
+    return GraphLayout.bounded({...graph, nodes: [...nodes.values()], edges: [...edges.values()], journeyIds: graphIds(graph),
+      context: true, total_nodes: nodes.size, omitted_nodes: 0, omitted_edges: graph.omitted_edges || 0,
+      background_omitted_nodes: overviewData?.omitted_nodes || 0, evidence_omitted_nodes: graph.omitted_nodes || 0,
+      background_omitted_edges: overviewData?.omitted_edges || 0,
+      limit: GraphLayout.MAX_NODES, edge_limit: GraphLayout.MAX_EDGES});
   }
   function highlight(node) { SourceCards.highlight(sourcePrefix, node?.citation, $('#page-ask')); }
   function controls() {
@@ -35,7 +45,10 @@ const ChatGraph = (() => {
     view = GraphView.mount(canvas(), {...data, sourcePrefix, viewState: snapshot}, highlight);
   }
   function setGraph(graph, nextMode, nextKey, description, prefix = '') {
-    const nextSignature = JSON.stringify([graph.nodes, graph.edges, graph.journeyIds, graph.scope, prefix]);
+    graph = GraphLayout.bounded(graph);
+    const nextSignature = JSON.stringify([graph.nodes, graph.edges, graph.journeyIds, graph.scope,
+      graph.omitted_nodes, graph.omitted_edges, graph.background_omitted_nodes, graph.background_omitted_edges,
+      graph.evidence_omitted_nodes, prefix]);
     const snapshot = view?.capture();
     data = graph; mode = nextMode; key = nextKey; sourcePrefix = prefix;
     $('#dock-context').textContent = description;
@@ -52,6 +65,7 @@ const ChatGraph = (() => {
     if (loading) return loading;
     const currentVault = vaultVersion;
     const task = api('/graph?overview=true').then(graph => {
+      graph = GraphLayout.bounded(graph);
       if (currentVault === vaultVersion) overviewData = graph;
       return graph;
     }).finally(() => { if (loading === task) loading = null; });

@@ -23,6 +23,9 @@ class Element {
 function harness(decorate = data => ({...data, nodes: data.nodes.map(node =>
   ({...node, category: 'other', categoryReason: 'No category rule matched.'}))})) {
   const observers = [], mounts = [], selections = [];
+  const input = new Element('input');
+  let pageName = '', focused = false;
+  input.focus = () => { focused = true; };
   let active = 0;
   class Observer {
     constructor(callback) { this.callback = callback; this.disconnected = false; observers.push(this); }
@@ -34,7 +37,9 @@ function harness(decorate = data => ({...data, nodes: data.nodes.map(node =>
     GraphCategories: {decorate, items: [{id: 'ai', label: 'AI & ML'}, {id: 'work', label: 'Work'}, {id: 'other', label: 'Other'}]},
     el: (tag, text, className = '') => Object.assign(new Element(tag, text), {className}),
     Option: class extends Element { constructor(text, value) { super('option', text); this.value = value; } },
-    IntersectionObserver: Observer, document: {hidden: false}, window: {addEventListener() {}},
+    IntersectionObserver: Observer, document: {hidden: false,
+      querySelector: selector => selector === '#graph-query' ? input : null},
+    page: name => { pageName = name; }, window: {addEventListener() {}},
     GraphScene: {mount(stage, data) {
       active++; mounts.push(data);
       const snapshot = {positions: {a: {x: 10, y: 20, z: 30}}, camera: {x: 40, y: 50, z: 60}, target: {x: 0, y: 0, z: 0}};
@@ -43,7 +48,8 @@ function harness(decorate = data => ({...data, nodes: data.nodes.map(node =>
     }}
   });
   vm.runInContext(fs.readFileSync('web/graph.js', 'utf8') + '\nglobalThis.view = GraphView;', context);
-  return {view: context.view, observers, mounts, selections, active: () => active};
+  return {view: context.view, observers, mounts, selections, active: () => active,
+    navigation: () => ({pageName, focused, query: input.value})};
 }
 const data = {nodes: [{id: 'a', kind: 'Note', label: 'Original note'}], edges: []};
 function canvas(open = true) {
@@ -113,4 +119,30 @@ test('knowledge-area colors group mixed node types and expose classification wit
   assert.equal(inspector.children.find(node => hasClass(node, 'graph-category-reason')).textContent, 'Matched tag: AI');
   assert.equal(inspector.children.find(node => node.tag === 'h4').textContent, '원래 노트 제목');
   assert.equal(JSON.stringify(original), before);
+});
+
+test('oversized graphs are capped before classification, scene resources and DOM choices are created', () => {
+  let classified = 0;
+  const h = harness(data => { classified = data.nodes.length; return {...data,
+    nodes: data.nodes.map(node => ({...node, category: 'other', categoryReason: 'Test'}))}; });
+  const original = {scope: 'overview', nodes: Array.from({length: 3000}, (_, i) => ({id: 'n' + i, kind: 'Note', label: 'Note ' + i})),
+    edges: Array.from({length: 8000}, () => ({source: 'n0', target: 'n1', kind: 'linksTo'}))};
+  const {container} = canvas(); const view = h.view.mount(container, original);
+  assert.equal(classified, GraphLayout.MAX_NODES);
+  assert.equal(h.mounts[0].nodes.length, GraphLayout.MAX_NODES);
+  assert.equal(h.mounts[0].edges.length, GraphLayout.MAX_EDGES);
+  const descendants = node => [node, ...node.children.flatMap(descendants)];
+  const picker = descendants(container).find(node => node.tag === 'select');
+  assert.equal(picker.children.length, GraphLayout.MAX_NODES + 1);
+  const notice = descendants(container).find(node => node.className === 'graph-limit');
+  assert.match(notice.textContent, /2760 nodes omitted/);
+  assert.match(notice.textContent, /7520 links omitted/);
+  assert.equal(notice.children[0].textContent, 'Search omitted records');
+  notice.children[0].onclick();
+  assert.deepEqual(h.navigation(), {pageName: 'graph', focused: true, query: ''});
+  view.select('n0');
+  const explore = descendants(container).find(node => node.textContent === 'Explore this note');
+  explore.onclick();
+  assert.deepEqual(h.navigation(), {pageName: 'graph', focused: true, query: 'Note 0'});
+  assert.equal(original.nodes.length, 3000); assert.equal(original.edges.length, 8000);
 });
