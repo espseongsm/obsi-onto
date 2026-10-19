@@ -9,7 +9,7 @@ from app.conflicts import overlay, rule_candidates, validate_candidates
 from app.conversations import context, retrieval_question
 from app.indexer import now
 from app.job_store import TERMINAL, JobStore
-from app.query_contracts import Question
+from app.query_contracts import Question, draft_sentences
 
 
 class QueryJobs:
@@ -20,6 +20,8 @@ class QueryJobs:
         self.futures = {}
         self.closed = False
         self.streams = threading.BoundedSemaphore(8)
+        # Unverified answer text while the model writes; kept in memory only, never saved.
+        self.drafts = {}
 
     def submit(self, request, request_id=None):
         request = Question.model_validate(request).model_dump()
@@ -56,8 +58,8 @@ class QueryJobs:
                 if not rows:
                     raise KeyError(jid)
                 if rows[0]["seq"] == after:
-                    return {**rows[0], "unchanged": True}
-            return self.repo.public(self.repo.get(jid))
+                    return {**rows[0], "unchanged": True, "draft": self.drafts.get(jid, [])}
+            return {**self.repo.public(self.repo.get(jid)), "draft": self.drafts.get(jid, [])}
 
     def recent(self):
         return self.service.store.rows(
@@ -162,6 +164,8 @@ class QueryJobs:
                         )
                 except KeyError:
                     pass
+        finally:
+            self.drafts.pop(jid, None)
 
     def _execute(self, jid):
         svc, search = self.service, self.service.search
@@ -246,7 +250,15 @@ class QueryJobs:
                 if request["generate"] and svc.generator.enabled
                 else "Preparing the retrieved source evidence and knowledge graph.",
             )
-        sentences, generated, warning = self._generate(request, snapshot["evidence"], payload)
+
+        def draft(content):
+            self.drafts[jid] = draft_sentences(content)
+
+        sentences, generated, warning = self._generate(
+            request, snapshot["evidence"], payload, draft
+        )
+        if not generated:
+            self.drafts.pop(jid, None)  # The evidence fallback replaces any partial text.
         with svc.operation, svc.store.lock:
             job = self._active(jid)
             if not job:
@@ -313,7 +325,7 @@ class QueryJobs:
                 "The semantic conflict check failed. This does not mean there are no conflicts.",
             )
 
-    def _generate(self, request, evidence, payload):
+    def _generate(self, request, evidence, payload, on_text=None):
         if request["generate"] and not self.service.generator.enabled:
             return [], False, self.service.generator.unavailable_reason
         if (
@@ -323,16 +335,19 @@ class QueryJobs:
         ):
             return [], False, None
         try:
-            args = [request["question"], self.service.search.model_evidence(evidence)]
+            context = None
             if payload["clarifications"] or payload.get("conversation"):
-                args += [
-                    "answer",
-                    {
-                        "clarifications": payload["clarifications"],
-                        "conversation": payload.get("conversation", []),
-                    },
-                ]
-            output = self.service.generator.request(*args)
+                context = {
+                    "clarifications": payload["clarifications"],
+                    "conversation": payload.get("conversation", []),
+                }
+            output = self.service.generator.request(
+                request["question"],
+                self.service.search.model_evidence(evidence),
+                "answer",
+                context,
+                on_text,
+            )
             return self.service.search.validate_sentences(output, evidence), True, None
         except Exception:
             return (

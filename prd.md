@@ -130,6 +130,8 @@ App data includes duplicated passages, embeddings, conversations, jobs, reviews,
 
 Supported search modes are `lexical`, `semantic`, and `hybrid`. Apply ready-state, exclusion, domain, and recording-date filters consistently across all search paths.
 
+When the user sets no date range, a relative recording period (last week, this week, this month, today, yesterday) is read from a Korean or English question. The compare, connections, count, and summarize intents and the investment domain are read the same way; the work domain uses the Korean word only, because English "work" also means "function". English words match from a word start, so "investigate" does not select the investment domain.
+
 FTS retrieves up to 60 filtered candidates. Semantic retrieval also bounds candidates; rank fusion combines lexical, semantic, and relationship ranks rather than adding incompatible raw scores. Current weighted RRF uses lexical `1`, semantic `0.5`, and relationship `0.15`. Load passage bodies after ranking and deduplicate by common section ID. Relationship expansion uses controlled RDF index traversal.
 
 For every answer:
@@ -142,7 +144,7 @@ For every answer:
 
 Generated output uses `{"sentences":[{"text":"...","citations":["S123"]}]}`. Each sentence must cite current evidence IDs. Structure, length, and citation validation are enforced by the server. These checks do not establish semantic correctness; the original passages remain inspectable.
 
-Transport/authentication failures or unsupported response JSON switch to source excerpts. Valid JSON that fails answer/citation validation falls back for that answer without necessarily disabling all generation.
+A rejected key, URL, or model ID (HTTP 401, 403, 404, or an invalid URL) switches to source excerpts until restart. A timeout, lost connection, HTTP 429, or 5xx response shows source excerpts for that answer and pauses generation calls for 60 seconds, so later questions do not wait on the provider again. An unreadable response, or valid JSON that fails answer/citation validation, falls back for that answer only.
 
 Same-conversation follow-ups may use up to 20 completed turns from the same vault epoch as context. Explicit references to an earlier topic can augment retrieval terms. Prior generated answers are not factual evidence. Changing the vault configuration or exclusions prevents old conversation context from being sent on follow-ups.
 
@@ -167,6 +169,7 @@ A possible conflict is a temporary orange dashed graph overlay, not a confirmed 
 - Cancellation prevents late publication but does not undo an API request already sent.
 - Model and user waits release the common operation lock, allowing indexing and cancellation to continue.
 - The UI polls conditionally every 750ms while running, and stops while hidden, awaiting a user, or terminal.
+- While the model writes an answer, job responses include `draft`: the sentence texts read from the partial JSON so far. Drafts stay in memory only, never in job events or history. The UI labels them "Draft · not verified yet" and shows no citations. The checked answer replaces the draft; a fallback to source excerpts removes it.
 - SSE supports header authentication, bounded replay, up to eight streams, and connections of up to 30 seconds.
 
 Clarification reuse across questions and individual revocation are not implemented. Details: [answer progress and clarification](https://github.com/espseongsm/obsi-onto/blob/5897a1846c19d949fada7802115c3f7fd669123a/docs/answer-progress-and-clarification.md).
@@ -250,7 +253,7 @@ OBSI_LLM_API_KEY= \
 uv run main.py
 ```
 
-Generation requests use JSON response format and omit unsupported temperature overrides. The configured status is not a live provider probe. HTTP/authentication/connection or unreadable-JSON failures disable generation until restart. Valid JSON that fails content/citation checks falls back for the current answer. Local semantic search remains independent.
+Generation requests use JSON response format and omit unsupported temperature overrides. Answer requests stream (`stream: true`, server-sent events) within the same response byte limit; a provider that ignores streaming and returns one JSON body is also accepted. Conflict, extraction, and suggestion requests do not stream. The configured status is not a live provider probe. Only HTTP 401, 403, 404, or an invalid URL disable generation until restart. Timeouts, lost connections, HTTP 429, and 5xx responses pause generation calls for 60 seconds. Unreadable JSON, or valid JSON that fails content/citation checks, falls back for the current answer. Local semantic search remains independent.
 
 ### Embeddings
 
@@ -346,7 +349,7 @@ The dependency audit identified affected Pillow 11.3.0; update to Pillow 12.3.0 
 
 Rerun retrieval evaluation with `uv run python scripts/evaluate.py` after preparing the local embedding model. The script does not load `.env`; pass a custom `OBSI_DATA_DIR` in the shell. It uses five fictional notes and 20 Korean questions in a temporary database, forces local embeddings and no generation, and writes `docs/evaluation.json`.
 
-The latest implementation checks passed **136 Python tests**, **28 JavaScript tests**, and **4 Chromium browser tests**, plus Ruff, JavaScript syntax, and diff whitespace checks. Locked Python packages (53 registry package/version pairs) passed the OSV audit; npm audit reported zero known vulnerabilities. Redacted Gitleaks scans passed for reachable Git history and the proposed source tree. Tests use fictional vaults and model doubles, including macOS file notifications. Restricted environments can block watcher notifications. Existing RDFLib and test-client deprecation warnings remain. GitHub-hosted checks are additional to this local verification; see the pull request checks for their latest status.
+The latest implementation checks passed **155 Python tests**, **28 JavaScript tests**, and **4 Chromium browser tests**, plus Ruff, JavaScript syntax, and diff whitespace checks. Locked Python packages (53 registry package/version pairs) passed the OSV audit; npm audit reported zero known vulnerabilities. Redacted Gitleaks scans passed for reachable Git history and the proposed source tree. Tests use fictional vaults and model doubles, including macOS file notifications. Restricted environments can block watcher notifications. Existing RDFLib and test-client deprecation warnings remain. GitHub-hosted checks are additional to this local verification; see the pull request checks for their latest status.
 
 | Existing development measurement | Result and scope |
 |---|---|

@@ -62,7 +62,7 @@ def test_semantic_conflict_resume_passes_separate_user_context(service, monkeypa
     service.generator.enabled = True
     calls = []
 
-    def model(question, evidence, task="answer", context=None):
+    def model(question, evidence, task="answer", context=None, on_text=None):
         calls.append(task)
         if task == "conflicts":
             return {

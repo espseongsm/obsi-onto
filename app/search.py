@@ -41,41 +41,46 @@ STOP = {
     "그리고",
     "관해",
     "했나",
+    "last",
+    "this",
+    "week",
 }
 
 
+# Korean words match inside longer words because particles attach to them.
+# English words must start a word, so "investigate" is not "investment".
+INTENTS = (
+    ("compare", r"비교|달라|\bcompar|\bdiffer"),
+    ("connections", r"연결|\bconnect"),
+    ("count", r"몇|\bhow many\b"),
+    ("summarize", r"요약|\bsummar"),
+)
+
+
+def mentions(pattern, question):
+    return re.search(pattern, question, re.IGNORECASE) is not None
+
+
 def plan(question, domain="all", start=None, end=None):
-    intent = next(
-        (
-            name
-            for word, name in (
-                ("비교", "compare"),
-                ("달라", "compare"),
-                ("연결", "connections"),
-                ("몇", "count"),
-                ("요약", "summarize"),
-            )
-            if word in question
-        ),
-        "find",
-    )
+    intent = next((name for name, pattern in INTENTS if mentions(pattern, question)), "find")
     today = date.today()
     if not start and not end:
-        if "지난주" in question or "지난 주" in question:
+        if mentions(r"지난 ?주|\blast week\b", question):
             start = today - timedelta(days=today.weekday() + 7)
             end = start + timedelta(days=6)
-        elif "이번 주" in question or "이번주" in question:
+        elif mentions(r"이번 ?주|\bthis week\b", question):
             start, end = today - timedelta(days=today.weekday()), today
-        elif "이번 달" in question or "이번달" in question:
+        elif mentions(r"이번 ?달|\bthis month\b", question):
             start, end = today.replace(day=1), today
-        elif "오늘" in question:
+        elif mentions(r"오늘|\btoday\b", question):
             start = end = today
-        elif "어제" in question:
+        elif mentions(r"어제|\byesterday\b", question):
             start = end = today - timedelta(days=1)
     if domain == "all":
+        # English "work" is left out: "How does it work?" is not about work notes.
         if "업무" in question:
             domain = "work"
-        elif "투자" in question:
+        elif mentions(r"투자|\binvest(?:s|ed|ing|ments?)?\b", question):
             domain = "investment"
     return {
         "intent": intent,

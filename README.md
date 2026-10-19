@@ -57,6 +57,8 @@ Try questions using names from your own notes:
 - “How has my investment thesis for Company A changed?”
 - “What did I record about this project last week?”
 
+While an LLM writes the answer, its text appears as **Draft · not verified yet**. The checked answer with citations replaces the draft.
+
 Read the answer first. Expand **Sources** to reveal the evidence tiles, then select a tile or citation to inspect the original passage. **Open in Obsidian** opens the note; **View in graph** highlights the evidence.
 
 The answer's **3D evidence graph** starts open and can be collapsed. **Sources** and **Search & verification** start collapsed. Use **New chat** to start another conversation or **Recent chats** to reopen one.
@@ -110,7 +112,7 @@ An LLM enables generated summaries, comparisons, and relationship suggestions. I
 
 External generation sends your question, selected evidence, clarification, and recent conversation context to that provider. Automatic external question suggestions require the separate `OBSI_ALLOW_EXTERNAL_SUGGESTIONS=1` setting. Keep your key in `.env`; never commit it.
 
-If the model cannot connect, the app continues in evidence search mode. Local model setup and all configuration options are in the [technical specification](prd.md#9-model-configuration).
+If the model cannot connect, the app continues in evidence search mode. After a timeout or a provider error, it tries the model again about a minute later; a rejected key, URL, or model ID needs a settings fix and a restart. Local model setup and all configuration options are in the [technical specification](prd.md#9-model-configuration).
 
 ## Notes and troubleshooting
 
