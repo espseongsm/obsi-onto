@@ -287,3 +287,4 @@
 - 확인(브라우저): 임시 데이터 폴더와 SSE로 천천히 답하는 가짜 LLM 서버로 앱을 띄웠다. Chrome에서 샘플 볼트에 질문하니 작성 중 초안("Project B changed direction after the pilot showed lo")이 보였고, 끝나면 인용(S28)이 붙은 답변으로 바뀌었다. 사용자 `.env`·데이터·실행 중 서버는 쓰지 않았다.
 - 확인(테스트): Python 테스트가 136개에서 155개가 됐다. 영어 해석 테스트 6개 중 5개는 수정 전 코드에서 실패했다. 장애 처리는 "어떤 오류든 생성을 끈다"를 검사하던 기존 6개를 새 테스트 14개로 바꿨다. 이 중 8개와, 새 요구사항에 맞게 고친 기존 큰 응답 테스트 1개가 수정 전 코드에서 실패했다. 나머지는 이전에도 맞던 동작(오탐 없음, 설정 오류 시 중지)을 지킨다. 스트리밍 테스트 5개(전송 3·초안 해석 1·작업 흐름 1)를 더했다.
 - 확인(검사): Ruff 검사·서식 통과, Python 155개·JavaScript 28개 통과, 브라우저 보안 테스트 4개 통과(로컬에 Playwright 브라우저가 없어 설치된 Chrome으로 실행). 의존성은 바꾸지 않아 감사 검사는 다시 실행하지 않았다. 기존 RDFLib 폐기 예정 경고는 남는다.
+- 병합: `feat/english-plan-llm-resilience-streaming`을 푸시하고 [PR #8](https://github.com/espseongsm/obsi-onto/pull/8)을 열어 `main`에 병합했다. GitHub Actions의 `tests-and-dependencies`(Playwright 브라우저 테스트·의존성 감사 포함)와 `secrets` 검사가 통과했다. 활성 `gh` 계정이 읽기 전용인 `sm-seong_ktopen`이라 첫 푸시가 403으로 실패했고, 저장소 소유 계정 `espseongsm`으로 전환해 해결했다.
