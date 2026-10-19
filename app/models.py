@@ -4,6 +4,7 @@ import hashlib
 import json
 import os
 import threading
+import time
 from importlib.metadata import version
 from urllib.parse import urlsplit
 
@@ -12,6 +13,14 @@ import numpy as np
 
 from app.config import LOCAL_MODEL
 from app.model_http import EMBEDDING_RESPONSE_BYTES, GENERATION_RESPONSE_BYTES, post_json
+
+# A rejected key, URL or model ID needs new settings and a restart. Other failures are temporary.
+SETTINGS_STATUS = {401, 403, 404}
+RETRY_AFTER_SECONDS = 60
+PAUSED_REASON = (
+    "The LLM did not respond, so this answer shows source evidence. "
+    "The model will be tried again in about a minute."
+)
 
 
 def validate_endpoint(url, allow_external):
@@ -131,6 +140,7 @@ class Generator:
     def __init__(self, config):
         self.config = config
         self.slots = threading.BoundedSemaphore(2)
+        self.retry_at = 0.0
         self.enabled = False
         self.unavailable_reason = (
             "No LLM URL and model are configured. Evidence and knowledge search are available."
@@ -253,6 +263,15 @@ class Generator:
         try:
             if not self.enabled:
                 raise ValueError(self.unavailable_reason)
+            if time.monotonic() < self.retry_at:
+                raise ValueError(PAUSED_REASON)
+            return self._complete(payload)
+        finally:
+            self.slots.release()
+
+    def _complete(self, payload):
+        """Only settings errors stop generation; other failures fall back for one answer."""
+        try:
             response = post_json(
                 self.config.generation_url.rstrip("/") + "/chat/completions",
                 json=payload,
@@ -265,21 +284,24 @@ class Generator:
             if not isinstance(content, str) or len(content) > 100_000:
                 raise ValueError("Invalid model response size or format.")
             return json.loads(content)
-        except (httpx.HTTPError, httpx.InvalidURL):
+        except (httpx.HTTPStatusError, httpx.InvalidURL) as exc:
+            if isinstance(exc, httpx.HTTPStatusError) and (
+                exc.response.status_code not in SETTINGS_STATUS
+            ):
+                self.retry_at = time.monotonic() + RETRY_AFTER_SECONDS
+                raise ValueError(PAUSED_REASON) from None
             self.unavailable_reason = (
                 "Switched to evidence and knowledge search because the LLM "
-                "could not connect or authenticate. "
-                "Check the model settings and connection, then restart the server."
-            )
-            self.enabled = False
-            raise ValueError(self.unavailable_reason) from None
-        except (ValueError, KeyError, IndexError, TypeError):
-            self.unavailable_reason = (
-                "Switched to evidence and knowledge search because "
-                "the LLM response format is unsupported. "
+                "rejected the API key, URL, or model ID. "
                 "Check the model settings, then restart the server."
             )
             self.enabled = False
             raise ValueError(self.unavailable_reason) from None
-        finally:
-            self.slots.release()
+        except httpx.HTTPError:
+            # A timeout or lost connection: pause so each question does not wait on it again.
+            self.retry_at = time.monotonic() + RETRY_AFTER_SECONDS
+            raise ValueError(PAUSED_REASON) from None
+        except (ValueError, KeyError, IndexError, TypeError):
+            raise ValueError(
+                "The LLM response format was invalid, so this answer shows source evidence."
+            ) from None

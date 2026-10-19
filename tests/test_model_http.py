@@ -139,9 +139,9 @@ def test_generation_oversized_response_preserves_safe_fallback(monkeypatch):
     generator = Generator(
         Config(generation_url="http://127.0.0.1:11434/v1", generation_model="test-model")
     )
-    with pytest.raises(ValueError, match="response format is unsupported"):
+    with pytest.raises(ValueError, match="response format was invalid"):
         generator.request("question", [])
-    assert not generator.enabled and body.read == 1 and body.closed
+    assert generator.enabled and body.read == 1 and body.closed
 
 
 def test_generation_valid_streamed_response(monkeypatch):

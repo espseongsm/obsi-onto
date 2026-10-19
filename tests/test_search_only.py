@@ -77,11 +77,8 @@ def test_local_llm_without_api_key_is_supported(monkeypatch):
     assert generator.request("질문", []) == {"sentences": []}
 
 
-@pytest.mark.parametrize("failure", ["authentication", "network", "invalid_response"])
-@pytest.mark.parametrize("source_count", [1, 2])
-def test_runtime_model_failure_preserves_search_and_stops_retries(
-    service, monkeypatch, failure, source_count
-):
+def failing_generator(service, monkeypatch, failure):
+    """Every LLM call fails: an HTTP status code, a lost connection or an unusable response."""
     service.config.generation_url = "https://example.test/v1"
     service.config.generation_model = "test-model"
     service.config.external_generation = True
@@ -99,10 +96,14 @@ def test_runtime_model_failure_preserves_search_and_stops_retries(
         raise httpx.HTTPStatusError(
             "dummy-private-key https://private-address.test",
             request=request,
-            response=httpx.Response(401, request=request),
+            response=httpx.Response(failure, request=request),
         )
 
     monkeypatch.setattr("app.models.post_json", post)
+    return calls
+
+
+def ask_twice_with_evidence_fallback(service, source_count):
     write(service, "프로젝트.md", "프로젝트 도입 근거를 검토한다. #업무")
     if source_count == 2:
         write(service, "검토.md", "프로젝트 검색 기능을 확인한다. #업무")
@@ -114,8 +115,39 @@ def test_runtime_model_failure_preserves_search_and_stops_retries(
         assert {sentence["text"] for sentence in result["sentences"]} == {
             item["text"] for item in result["evidence"]
         }
+    public = json.dumps([service.status(), result], ensure_ascii=False)
+    assert "dummy-private-key" not in public and "private-address.test" not in public
+
+
+@pytest.mark.parametrize("code", [401, 403, 404])
+@pytest.mark.parametrize("source_count", [1, 2])
+def test_settings_failure_stops_generation_until_restart(service, monkeypatch, code, source_count):
+    calls = failing_generator(service, monkeypatch, code)
+    ask_twice_with_evidence_fallback(service, source_count)
     assert calls == ["conflicts" if source_count == 2 else "answer"]
     status = service.status()
     assert not status["generation_enabled"] and "restart" in status["generation_reason"]
-    public = json.dumps([status, result], ensure_ascii=False)
-    assert "dummy-private-key" not in public and "private-address.test" not in public
+
+
+@pytest.mark.parametrize("failure", ["network", 429, 503])
+@pytest.mark.parametrize("source_count", [1, 2])
+def test_temporary_failure_pauses_generation_then_retries(
+    service, monkeypatch, failure, source_count
+):
+    calls = failing_generator(service, monkeypatch, failure)
+    first = ["conflicts" if source_count == 2 else "answer"]
+    ask_twice_with_evidence_fallback(service, source_count)
+    # The pause skips later calls, so each question does not wait on the provider again.
+    assert calls == first
+    assert service.status()["generation_enabled"]
+    service.generator.retry_at = 0  # The pause has ended.
+    service.jobs.ask({"question": "프로젝트", "generate": True})
+    assert calls == first * 2
+
+
+@pytest.mark.parametrize("source_count", [1, 2])
+def test_invalid_response_falls_back_for_that_answer_only(service, monkeypatch, source_count):
+    calls = failing_generator(service, monkeypatch, "invalid_response")
+    ask_twice_with_evidence_fallback(service, source_count)
+    assert calls == (["conflicts", "answer"] if source_count == 2 else ["answer"]) * 2
+    assert service.status()["generation_enabled"]
