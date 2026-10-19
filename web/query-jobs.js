@@ -17,10 +17,17 @@ const QueryUI = (() => {
     const b = el('button', label); b.type = 'button';
     b.onclick = () => action(b, work); return b;
   }
+  // Model text arrives before its citations are checked, so it stays apart from the verified answer.
+  function showDraft(texts) {
+    const box = $('#job-draft');
+    if (!box || !texts?.length) return;
+    box.hidden = false;
+    box.replaceChildren(el('strong', 'Draft · not verified yet'), ...texts.map(text => el('p', text)));
+  }
   function show(job) {
     const elapsed = $('#job-elapsed');
     if (elapsed) elapsed.textContent = `${Math.max(0, Math.floor((Date.now() - Date.parse(elapsed.dataset.started)) / 1000))}s elapsed`;
-    if (job.unchanged || version === `${job.id}:${job.seq}`) return;
+    if (job.unchanged || version === `${job.id}:${job.seq}`) { showDraft(job.draft); return; }
     lastSeq = job.seq;
     version = `${job.id}:${job.seq}`;
     lastState = job.state;
@@ -31,6 +38,10 @@ const QueryUI = (() => {
     head.append(el('h2', label), el('span', 'Live progress', 'answer-label'));
     area.append(head, el('p', job.question, 'hint'));
     if (!terminal.has(job.state) && job.state !== 'awaiting_user') { const elapsed = el('p', 'Working…', 'hint'); elapsed.id = 'job-elapsed'; elapsed.dataset.started = job.created_at; area.append(elapsed); }
+    if (['generating', 'finalizing'].includes(job.state)) {
+      const draft = el('section', undefined, 'answer-draft'); draft.id = 'job-draft'; draft.hidden = true;
+      area.append(draft); showDraft(job.draft);
+    }
     const trace = el('details'); trace.open = !terminal.has(job.state);
     trace.append(el('summary', 'Search and verification steps'));
     const steps = el('ol', undefined, 'job-steps');

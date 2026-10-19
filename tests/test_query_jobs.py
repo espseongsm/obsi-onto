@@ -1,3 +1,4 @@
+import json
 import threading
 import time
 import uuid
@@ -8,6 +9,8 @@ from fastapi.testclient import TestClient
 from app.api import create_app
 from app.conflicts import overlay
 from app.job_store import JobStore
+from app.models import Generator
+from app.query_contracts import draft_sentences
 from app.service import Service
 from tests.conftest import FakeEmbedder, write
 
@@ -246,3 +249,35 @@ def test_vector_failure_recovers_without_changing_source_identity(service, monke
     assert recovered["vector_attempts"] == 0 and recovered["vector_retry_at"] == 0
     assert service.store.rows("SELECT id,revision FROM sections") == sections
     assert service.store.rows("SELECT rowid FROM vectors")
+
+
+def test_draft_sentences_read_a_partial_answer():
+    partial = '{"sentences":[{"text":"Say \\"hi\\".","citations":["S1"]},{"text":"Cut \\u00'
+    assert draft_sentences(partial) == ['Say "hi".', "Cut "]
+    assert draft_sentences('{"sentences":[{"text":"') == []
+
+
+def test_answer_draft_is_shown_while_the_model_writes(service, monkeypatch):
+    write(service, "업무.md", "프로젝트 B 출시일 확인")
+    service.indexer.reconcile()
+    service.config.generation_url = "http://127.0.0.1:11434/v1"
+    service.config.generation_model = "test-model"
+    service.generator = Generator(service.config)
+    seen = []
+
+    def stream(url, *, on_text, **options):
+        assert options["json"]["stream"] is True
+        evidence = json.loads(options["json"]["messages"][1]["content"])["evidence"]
+        on_text('{"sentences":[{"text":"출시일은 아직')
+        jid = next(iter(service.jobs.drafts))
+        seen.append(service.jobs.get(jid, after=service.jobs.get(jid)["seq"]))
+        sentence = {"text": "출시일은 아직 확인 중입니다.", "citations": [evidence[0]["citation"]]}
+        return json.dumps({"sentences": [sentence]}, ensure_ascii=False)
+
+    monkeypatch.setattr("app.models.stream_chat", stream)
+    job = finish(service, submit(service, generate=True))
+    # Polling sees the unverified text even though no progress event was added.
+    assert seen[0]["unchanged"] and seen[0]["draft"] == ["출시일은 아직"]
+    assert job["result"]["generated"]
+    assert job["result"]["sentences"][0]["text"] == "출시일은 아직 확인 중입니다."
+    assert job["draft"] == [] and not service.jobs.drafts

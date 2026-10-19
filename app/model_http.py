@@ -1,6 +1,7 @@
 """Read model JSON with wire and decoded byte limits before parsing it."""
 
 import json
+import time
 import zlib
 
 import httpx
@@ -49,3 +50,42 @@ def post_json(url, *, max_bytes, headers, **options):
         if encoding != "identity" and (decoder is None or not decoder.eof):
             raise ValueError("Incomplete compressed model response.")
         return json.loads(body)
+
+
+def stream_chat(url, *, max_bytes, headers, on_text, **options):
+    """Read an OpenAI-compatible chat stream and report the text so far, at most every 0.25 s."""
+    # Streams are requested without compression, so wire bytes are the decoded budget.
+    headers = {**headers, "Accept-Encoding": "identity"}
+    with httpx.stream("POST", url, headers=headers, **options) as response:
+        response.raise_for_status()
+        if response.headers.get("content-encoding", "identity").strip().lower() != "identity":
+            raise ValueError("Unsupported model response encoding.")
+        events = response.headers.get("content-type", "").startswith("text/event-stream")
+        received, pending, parts, reported = 0, bytearray(), [], 0.0
+        for chunk in response.iter_raw():
+            received += len(chunk)
+            if received > max_bytes:
+                raise ValueError("The model response is too large.")
+            pending.extend(chunk)
+            if not events:
+                continue
+            *lines, rest = pending.split(b"\n")
+            pending = bytearray(rest)
+            for line in lines:
+                if not line.startswith(b"data:"):
+                    continue
+                data = line[5:].strip()
+                if data == b"[DONE]":
+                    return "".join(parts)
+                event = json.loads(data)
+                if "error" in event:
+                    raise ValueError("The model stream reported an error.")
+                if event.get("choices"):
+                    parts.append((event["choices"][0].get("delta") or {}).get("content") or "")
+            if parts and time.monotonic() - reported >= 0.25:
+                reported = time.monotonic()
+                on_text("".join(parts))
+        if not events:
+            # Some servers ignore "stream" and send one JSON body instead.
+            return json.loads(pending)["choices"][0]["message"]["content"]
+        return "".join(parts)

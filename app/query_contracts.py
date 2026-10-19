@@ -1,5 +1,7 @@
 """Bounded API and model contracts for durable question workflows."""
 
+import json
+import re
 from typing import Annotated, Literal
 
 from pydantic import BaseModel, ConfigDict, Field, model_validator
@@ -59,6 +61,23 @@ class Sentence(StrictModel):
 
 class AnswerOutput(StrictModel):
     sentences: list[Sentence] = Field(min_length=1, max_length=40)
+
+
+_DRAFT_TEXT = re.compile(r'"text"\s*:\s*"((?:[^"\\]|\\.)*)')
+
+
+def draft_sentences(content):
+    """Sentence texts from a partial AnswerOutput JSON reply; the last one may be cut off."""
+    texts = []
+    for match in _DRAFT_TEXT.finditer(content):
+        raw = re.sub(r"\\u[0-9a-fA-F]{0,3}$", "", match.group(1))  # Drop a cut-off escape.
+        try:
+            text = json.loads(f'"{raw}"', strict=False)
+        except ValueError:
+            break
+        if text:
+            texts.append(text)
+    return texts
 
 
 class ConflictSide(StrictModel):

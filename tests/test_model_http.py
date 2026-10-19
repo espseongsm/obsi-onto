@@ -10,7 +10,7 @@ import httpx
 import pytest
 
 from app.config import Config
-from app.model_http import post_json
+from app.model_http import post_json, stream_chat
 from app.models import Embedder, Generator
 
 
@@ -183,3 +183,43 @@ def test_external_embedding_budget_and_valid_vector_order(monkeypatch, tmp_path)
     with pytest.raises(ValueError, match="too large"):
         embedder.embed(["a"])
     assert body.read == 1 and body.closed
+
+
+SSE = {"content-type": "text/event-stream"}
+
+
+def sse(*deltas, done=True):
+    events = [{"choices": [{"delta": {"content": delta}}]} for delta in deltas]
+    lines = [f"data: {json.dumps(event)}\n\n" for event in events]
+    return ("".join(lines) + ("data: [DONE]\n\n" if done else "")).encode()
+
+
+def test_chat_stream_reports_text_and_returns_the_whole_reply(monkeypatch):
+    raw = sse('{"sentences":[{"text":"Hel', 'lo"', ',"citations":["S1"]}]}')
+    # The first event is split mid-line, so it must be joined across network chunks.
+    first = raw.index(b"\n\n") + 2
+    body, calls = mock_stream(monkeypatch, [raw[:20], raw[20:first], raw[first:]], SSE)
+    seen = []
+    content = stream_chat(
+        "https://example.test/v1", max_bytes=10_000, headers={}, on_text=seen.append
+    )
+    assert json.loads(content) == {"sentences": [{"text": "Hello", "citations": ["S1"]}]}
+    assert seen == ['{"sentences":[{"text":"Hel']
+    assert calls[0][2]["headers"]["Accept-Encoding"] == "identity" and body.closed
+
+
+def test_chat_stream_accepts_a_server_that_sends_one_json_body(monkeypatch):
+    payload = json.dumps({"choices": [{"message": {"content": '{"sentences": []}'}}]}).encode()
+    mock_stream(monkeypatch, [payload[:10], payload[10:]], {"content-type": "application/json"})
+    content = stream_chat("https://example.test/v1", max_bytes=10_000, headers={}, on_text=print)
+    assert content == '{"sentences": []}'
+
+
+def test_chat_stream_stops_at_the_budget_and_on_stream_errors(monkeypatch):
+    body, _ = mock_stream(monkeypatch, [sse("x" * 50, done=False), b"never read"], SSE)
+    with pytest.raises(ValueError, match="too large"):
+        stream_chat("https://example.test/v1", max_bytes=40, headers={}, on_text=print)
+    assert body.read == 1 and body.closed
+    mock_stream(monkeypatch, [b'data: {"error": {"message": "overloaded"}}\n\n'], SSE)
+    with pytest.raises(ValueError, match="stream reported an error"):
+        stream_chat("https://example.test/v1", max_bytes=10_000, headers={}, on_text=print)

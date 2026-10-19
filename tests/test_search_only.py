@@ -28,9 +28,8 @@ def test_unavailable_llm_starts_and_searches_without_model_calls(
     tmp_path, monkeypatch, url, model, external, key, reason
 ):
     monkeypatch.setenv("OBSI_LLM_API_KEY", key)
-    monkeypatch.setattr(
-        "app.models.post_json", lambda *a, **kw: pytest.fail("LLM must not be called")
-    )
+    for transport in ("app.models.post_json", "app.models.stream_chat"):
+        monkeypatch.setattr(transport, lambda *a, **kw: pytest.fail("LLM must not be called"))
     service = Service(
         Config(
             data_dir=tmp_path / "data",
@@ -100,6 +99,7 @@ def failing_generator(service, monkeypatch, failure):
         )
 
     monkeypatch.setattr("app.models.post_json", post)
+    monkeypatch.setattr("app.models.stream_chat", post)  # Answers stream; other tasks do not.
     return calls
 
 
