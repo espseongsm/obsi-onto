@@ -141,6 +141,25 @@ def test_relative_period_is_record_date_only():
     assert p["date_basis"] == "기록일"
 
 
+@pytest.mark.parametrize(
+    ("english", "korean"),
+    [
+        ("Summarize what I recorded last week", "지난주 기록을 요약해줘"),
+        ("Compare my investment notes from this week", "이번 주 투자 기록을 비교해줘"),
+        ("How many meetings did I record today?", "오늘 기록한 회의는 몇 개야?"),
+        ("What connects the notes I wrote yesterday?", "어제 쓴 노트의 연결을 알려줘"),
+        ("What changed this month?", "이번 달에 무엇이 바뀌었나?"),
+    ],
+)
+def test_english_questions_plan_like_korean(english, korean):
+    assert plan(english) == plan(korean)
+
+
+def test_english_words_inside_other_words_do_not_change_the_plan():
+    p = plan("Please investigate why the work schedule slipped this weekend")
+    assert (p["intent"], p["domain"], p["start"], p["end"]) == ("find", "all", None, None)
+
+
 def test_unrelated_edit_preserves_confirmed_relationship(service):
     file = write(service, "노트.md", "## 투자\n\nA기업 매수 검토\n\n## 개인\n\n산책했다")
     service.indexer.reconcile()
